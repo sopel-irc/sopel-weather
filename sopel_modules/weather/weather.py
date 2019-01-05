@@ -186,7 +186,6 @@ def say_info(bot, trigger):
 @example('.weather Seattle')
 def weather_command(bot, trigger):
     """.weather location - Show the weather at the given location."""
-    bot.reply("Weather Bot")
     if bot.config.weather.api_key is None or bot.config.weather.api_key is '':
         return bot.reply("OpenWeatherMap API key missing. Please configure this module.")
     say_info(bot, trigger)
