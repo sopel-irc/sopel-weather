@@ -27,7 +27,7 @@ with open('tests/requirements.txt') as dev_requirements_file:
 
 setup(
     name='sopel_modules.weather',
-    version='0.0.1',
+    version='0.0.2',
     description='A working re-implementation of the weather module for Sopel',
     long_description=readme + '\n\n' + history,
     long_description_content_type='text/markdown',  # This is important!
