@@ -20,4 +20,5 @@ Since Yahoo deprecated their weather API on January 3, 2019, a reimplementation 
 ## Requirements
 ```
 requests
+sopel
 ```
