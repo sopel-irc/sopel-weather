@@ -5,9 +5,7 @@
 # Licensed under the Eiffel Forum License 2.
 from __future__ import unicode_literals, absolute_import, print_function, division
 
-from datetime import datetime, timedelta
 from sopel.config.types import StaticSection, ValidatedAttribute
-from sopel.formatting import color, colors
 from sopel.module import commands, example, NOLIMIT
 from sopel.modules.units import c_to_f
 
@@ -167,18 +165,25 @@ def say_info(bot, trigger):
             # Otherwise, we assume it's a city name
             else:
                 result = location_search(trigger.group(2), bot.config.weather.api_key)
+            if not result:
+                return bot.reply("I don't know where that is.")
 
             woeid = result['id']
+
     if not woeid:
         return bot.reply("I don't know where that is.")
 
     result = woeid_search(woeid, bot.config.weather.api_key)
-    location = result['name']
-    country = result['sys']['country']
-    temp = get_temp(result)
-    humidity = get_humidity(result)
-    wind = get_wind(result)
-    return bot.say(u'%s, %s: %s, %s, %s' % (location, country, temp, humidity, wind))
+
+    if not result:
+        return bot.reply("An error occurred")
+    else:
+        location = result['name']
+        country = result['sys']['country']
+        temp = get_temp(result)
+        humidity = get_humidity(result)
+        wind = get_wind(result)
+        return bot.say(u'%s, %s: %s, %s, %s' % (location, country, temp, humidity, wind))
 
 
 @commands('weather', 'wea')
@@ -198,7 +203,7 @@ def weather_command(bot, trigger):
 def update_location(bot, trigger):
     """Set your default weather location."""
     if not trigger.group(2):
-        bot.reply('Give me a location, like "London" or "90210" or "w7174408".')
+        bot.reply('Give me a location, like "London" or "90210" or "w2643743".')
         return NOLIMIT
 
     # Check if WOEID
@@ -212,6 +217,9 @@ def update_location(bot, trigger):
     # Otherwise, we assume it's a city name
     else:
         result = location_search(trigger.group(2), bot.config.weather.api_key)
+
+    if not result:
+        return bot.reply("I don't know where that is.")
 
     woeid = result['id']
 
