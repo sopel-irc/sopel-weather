@@ -1,7 +1,9 @@
 codeclimate-test-reporter
 coveralls
 flake8
+mock
 pycodestyle
 pytest
 pytest-cov
-mock
+requests_mock
+sopel
