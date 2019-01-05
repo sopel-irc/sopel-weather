@@ -155,12 +155,12 @@ def say_info(bot, trigger):
         woeid = bot.db.get_nick_value(location, 'woeid')
         if woeid is None:
             # Check if WOEID
-            if re.match('^w\d+$', trigger.group(2)):
+            if re.match(r'^w\d+$', trigger.group(2)):
                 # Pop off the w from our trigger.group
                 result = woeid_search(trigger.group(2)[1:], bot.config.weather.api_key)
             # Check if zip code (this doesn't cover all, but most)
             # https://en.wikipedia.org/wiki/List_of_postal_codes
-            elif re.match('^\d+$', trigger.group(2)):
+            elif re.match(r'^\d+$', trigger.group(2)):
                 result = zip_search(trigger.group(2), bot.config.weather.api_key)
             # Otherwise, we assume it's a city name
             else:
@@ -207,12 +207,12 @@ def update_location(bot, trigger):
         return NOLIMIT
 
     # Check if WOEID
-    if re.match('^w\d+$', trigger.group(2)):
+    if re.match(r'^w\d+$', trigger.group(2)):
         # Pop off the w from our trigger.group
         result = woeid_search(trigger.group(2)[1:], bot.config.weather.api_key)
     # Check if zip code (this doesn't cover all, but most)
     # https://en.wikipedia.org/wiki/List_of_postal_codes
-    elif re.match('^\d+$', trigger.group(2)):
+    elif re.match(r'^\d+$', trigger.group(2)):
         result = zip_search(trigger.group(2), bot.config.weather.api_key)
     # Otherwise, we assume it's a city name
     else:
