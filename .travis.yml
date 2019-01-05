@@ -8,9 +8,9 @@ addons:
 install:
   - pip install -e .
   - pip install -r tests/requirements.txt
-  - pip install coveralls
 script:
   - flake8 --ignore=E501,F401,F403 ./
+  - pytest --cov=./sopel_modules/
 deploy:
   provider: pypi
   user: rustybower
