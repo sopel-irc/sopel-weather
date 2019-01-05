@@ -149,7 +149,7 @@ def say_info(bot, trigger):
                              "Give me a location, like {pfx}{command} London, "
                              "or tell me where you live by saying {pfx}setlocation "
                              "London, for example.".format(command=trigger.group(1),
-                                pfx=bot.config.core.help_prefix))
+                                                           pfx=bot.config.core.help_prefix))
     else:
         location = location.strip()
         woeid = bot.db.get_nick_value(location, 'woeid')
