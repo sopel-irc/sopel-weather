@@ -10,7 +10,10 @@ install:
   - pip install -r tests/requirements.txt
 script:
   - flake8 --ignore=E501,F401,F403 ./
-  #- pytest --cov=./sopel_modules/
+  - coverage run -m py.test -v .
+  - coverage report
+after_success:
+  - coveralls
 deploy:
   provider: pypi
   user: rustybower
@@ -20,5 +23,3 @@ deploy:
     tags: true
     python: '3.5'
   skip_existing: true
-#after_success:
-  #- coveralls
