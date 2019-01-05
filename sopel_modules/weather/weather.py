@@ -67,6 +67,14 @@ def zip_search(zip_code, api_key):
     return results.json()
 
 
+def get_condition(parsed):
+    try:
+        condition = parsed['weather'][0]['main']
+    except (KeyError, ValueError):
+        return 'unknown'
+    return condition
+
+
 def get_temp(parsed):
     try:
         temp = int(parsed['main']['temp'])
@@ -181,9 +189,10 @@ def say_info(bot, trigger):
         location = result['name']
         country = result['sys']['country']
         temp = get_temp(result)
+        condition = get_condition(result)
         humidity = get_humidity(result)
         wind = get_wind(result)
-        return bot.say(u'%s, %s: %s, %s, %s' % (location, country, temp, humidity, wind))
+        return bot.say(u'%s, %s: %s, %s, %s, %s' % (location, country, temp, condition, humidity, wind))
 
 
 @commands('weather', 'wea')
