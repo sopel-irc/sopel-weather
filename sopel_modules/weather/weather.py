@@ -140,25 +140,25 @@ def get_wind(parsed):
 def get_tomorrow_condition(results):
     # Only using the first 8 results to get the next 24 hours (8 * 3 hours)
     # This is super ugly with list comprehensions
-    if [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main']  == 'Snow']:
+    if [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Snow']:
         return sorted([x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Snow'],
                       key=lambda k: k['id'], reverse=True)[0]['description'].title()
-    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main']  == 'Thunderstorm']:
+    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Thunderstorm']:
         return sorted([x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Thunderstorm'],
                       key=lambda k: k['id'], reverse=True)[0]['description'].title()
-    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main']  == 'Rain']:
+    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Rain']:
         return sorted([x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Rain'],
                       key=lambda k: k['id'], reverse=True)[0]['description'].title()
-    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main']  == 'Drizzle']:
+    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Drizzle']:
         return sorted([x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Drizzle'],
                       key=lambda k: k['id'], reverse=True)[0]['description'].title()
-    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main']  == 'Atmosphere']:
+    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Atmosphere']:
         return sorted([x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Atmosphere'],
                       key=lambda k: k['id'], reverse=True)[0]['description'].title()
-    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main']  == 'Clouds']:
+    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Clouds']:
         return sorted([x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Clouds'],
                       key=lambda k: k['id'], reverse=True)[0]['description'].title()
-    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main']  == 'Clear']:
+    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Clear']:
         return sorted([x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Clear'],
                       key=lambda k: k['id'], reverse=True)[0]['description'].title()
     else:
