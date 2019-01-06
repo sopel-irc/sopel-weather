@@ -231,7 +231,7 @@ def say_info(bot, trigger, mode):
             tomorrow_condition = get_tomorrow_condition(result)
             tomorrow_high = get_tomorrow_high(result)
             tomorrow_low = get_tomorrow_low(result)
-            return bot.say(u'Tomorrow\'s Forecast: %s, %s: %s, %s, %s' % (location, country, tomorrow_condition, tomorrow_high, tomorrow_low))
+            return bot.say(u'24h Forecast: %s, %s: %s, %s, %s' % (location, country, tomorrow_condition, tomorrow_high, tomorrow_low))
     return
 
 
