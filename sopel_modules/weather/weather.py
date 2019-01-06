@@ -31,37 +31,27 @@ def configure(config):
     )
 
 
-def location_search(location, api_key):
+def search(mode, query, api_key):
     """
     Find the first Where On Earth ID for the given query. Result is the etree
     node for the result, so that location data can still be retrieved. Returns
     None if there is no result, or the woeid field is empty.
     """
-    results = requests.get('https://api.openweathermap.org/data/2.5/weather?q=%s&appid=%s&units=metric' % (location, api_key))
-    if results is None or results.status_code is not 200:
-        return None
-    return results.json()
+    results = None
 
-
-def woeid_search(woeid, api_key):
-    """
-    Find the first Where On Earth ID for the given query. Result is the etree
-    node for the result, so that location data can still be retrieved. Returns
-    None if there is no result, or the woeid field is empty.
-    """
-    results = requests.get('https://api.openweathermap.org/data/2.5/weather?id=%s&appid=%s&units=metric' % (woeid, api_key))
-    if results is None or results.status_code is not 200:
-        return None
-    return results.json()
-
-
-def zip_search(zip_code, api_key):
-    """
-    Find the first Where On Earth ID for the given query. Result is the etree
-    node for the result, so that location data can still be retrieved. Returns
-    None if there is no result, or the woeid field is empty.
-    """
-    results = requests.get('https://api.openweathermap.org/data/2.5/weather?zip=%s&appid=%s&units=metric' % (zip_code, api_key))
+    # Check if it's a WOEID
+    if re.match('^[0-9]+$', str(query)):
+        results = requests.get(
+            'https://api.openweathermap.org/data/2.5/%s?id=%s&appid=%s&units=metric' % (mode, query, api_key))
+    # Check if zip code (this doesn't cover all, but most)
+    # https://en.wikipedia.org/wiki/List_of_postal_codes
+    elif re.match(r'^\d+$', str(query)):
+        results = requests.get(
+            'https://api.openweathermap.org/data/2.5/%s?zip=%s&appid=%s&units=metric' % (mode, query, api_key))
+    # Otherwise, we assume it's a city name or location
+    else:
+        results = requests.get(
+            'https://api.openweathermap.org/data/2.5/%s?q=%s&appid=%s&units=metric' % (mode, query, api_key))
     if results is None or results.status_code is not 200:
         return None
     return results.json()
@@ -147,7 +137,53 @@ def get_wind(parsed):
     return description + ' ' + str(m_s) + 'm/s (' + degrees + ')'
 
 
-def say_info(bot, trigger):
+def get_tomorrow_condition(results):
+    # Only using the first 8 results to get the next 24 hours (8 * 3 hours)
+    # This is super ugly with list comprehensions
+    if [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main']  == 'Snow']:
+        return sorted([x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Snow'],
+                      key=lambda k: k['id'], reverse=True)[0]['description'].title()
+    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main']  == 'Thunderstorm']:
+        return sorted([x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Thunderstorm'],
+                      key=lambda k: k['id'], reverse=True)[0]['description'].title()
+    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main']  == 'Rain']:
+        return sorted([x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Rain'],
+                      key=lambda k: k['id'], reverse=True)[0]['description'].title()
+    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main']  == 'Drizzle']:
+        return sorted([x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Drizzle'],
+                      key=lambda k: k['id'], reverse=True)[0]['description'].title()
+    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main']  == 'Atmosphere']:
+        return sorted([x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Atmosphere'],
+                      key=lambda k: k['id'], reverse=True)[0]['description'].title()
+    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main']  == 'Clouds']:
+        return sorted([x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Clouds'],
+                      key=lambda k: k['id'], reverse=True)[0]['description'].title()
+    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main']  == 'Clear']:
+        return sorted([x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Clear'],
+                      key=lambda k: k['id'], reverse=True)[0]['description'].title()
+    else:
+        return 'Unknown'
+
+
+def get_tomorrow_high(results):
+    temp = None
+    # Only using the first 8 results to get the next 24 hours (8 * 3 hours)
+    for _ in results['list'][:8]:
+        if temp is None or _['main']['temp_max'] > temp:
+            temp = _['main']['temp_max']
+    return u'High: %d\u00B0C (%d\u00B0F)' % (temp, c_to_f(temp))
+
+
+def get_tomorrow_low(results):
+    temp = None
+    # Only using the first 8 results to get the next 24 hours (8 * 3 hours)
+    for _ in results['list'][:8]:
+        if temp is None or _['main']['temp_min'] < temp:
+            temp = _['main']['temp_min']
+    return u'Low: %d\u00B0C (%d\u00B0F)' % (temp, c_to_f(temp))
+
+
+def say_info(bot, trigger, mode):
     location = trigger.group(2)
     woeid = ''
     if not location:
@@ -162,51 +198,70 @@ def say_info(bot, trigger):
         location = location.strip()
         woeid = bot.db.get_nick_value(location, 'woeid')
         if woeid is None:
-            # Check if WOEID
-            if re.match(r'^w\d+$', trigger.group(2)):
-                # Pop off the w from our trigger.group
-                result = woeid_search(trigger.group(2)[1:], bot.config.weather.api_key)
-            # Check if zip code (this doesn't cover all, but most)
-            # https://en.wikipedia.org/wiki/List_of_postal_codes
-            elif re.match(r'^\d+$', trigger.group(2)):
-                result = zip_search(trigger.group(2), bot.config.weather.api_key)
-            # Otherwise, we assume it's a city name
-            else:
-                result = location_search(trigger.group(2), bot.config.weather.api_key)
+            result = search('weather', location, bot.config.weather.api_key)
             if not result:
                 return bot.reply("I don't know where that is.")
-
             woeid = result['id']
 
     if not woeid:
         return bot.reply("I don't know where that is.")
 
-    result = woeid_search(woeid, bot.config.weather.api_key)
+    if mode == 'weather':
+        result = search('weather', woeid, bot.config.weather.api_key)
 
-    if not result:
-        return bot.reply("An error occurred")
-    else:
-        location = result['name']
-        country = result['sys']['country']
-        temp = get_temp(result)
-        condition = get_condition(result)
-        humidity = get_humidity(result)
-        wind = get_wind(result)
-        return bot.say(u'%s, %s: %s, %s, %s, %s' % (location, country, temp, condition, humidity, wind))
+        if not result:
+            return bot.reply("An error occurred")
+        else:
+            location = result['name']
+            country = result['sys']['country']
+            temp = get_temp(result)
+            condition = get_condition(result)
+            humidity = get_humidity(result)
+            wind = get_wind(result)
+            return bot.say(u'%s, %s: %s, %s, %s, %s' % (location, country, temp, condition, humidity, wind))
+
+    if mode == 'forecast':
+        result = search('forecast', woeid, bot.config.weather.api_key)
+
+        if not result:
+            return bot.reply("An error occurred")
+        else:
+            location = result['city']['name']
+            country = result['city']['country']
+            tomorrow_condition = get_tomorrow_condition(result)
+            tomorrow_high = get_tomorrow_high(result)
+            tomorrow_low = get_tomorrow_low(result)
+            return bot.say(u'%s, %s: %s, %s, %s' % (location, country, tomorrow_condition, tomorrow_high, tomorrow_low))
+    return
 
 
 @commands('weather', 'wea')
 @example('.weather London')
-@example('.weather Seattle')
+@example('.weather Seattle, US')
+@example('.weather 90210')
+@example('.weather w7174408')
 def weather_command(bot, trigger):
     """.weather location - Show the weather at the given location."""
     if bot.config.weather.api_key is None or bot.config.weather.api_key is '':
         return bot.reply("OpenWeatherMap API key missing. Please configure this module.")
-    say_info(bot, trigger)
+    say_info(bot, trigger, 'weather')
+
+
+@commands('forecast')
+@example('.forecast London')
+@example('.forecast Seattle, US')
+@example('.forecast 90210')
+@example('.forecast w7174408')
+def forecast_command(bot, trigger):
+    """.forecast location - Show the weather forecast for tomorrow at the given location."""
+    if bot.config.weather.api_key is None or bot.config.weather.api_key is '':
+        return bot.reply("OpenWeatherMap API key missing. Please configure this module.")
+    say_info(bot, trigger, 'forecast')
 
 
 @commands('setlocation')
 @example('.setlocation London')
+@example('.setlocation Seattle, US')
 @example('.setlocation 90210')
 @example('.setlocation w7174408')
 def update_location(bot, trigger):
@@ -218,14 +273,14 @@ def update_location(bot, trigger):
     # Check if WOEID
     if re.match(r'^w\d+$', trigger.group(2)):
         # Pop off the w from our trigger.group
-        result = woeid_search(trigger.group(2)[1:], bot.config.weather.api_key)
+        result = search('weather', trigger.group(2)[1:], bot.config.weather.api_key)
     # Check if zip code (this doesn't cover all, but most)
     # https://en.wikipedia.org/wiki/List_of_postal_codes
     elif re.match(r'^\d+$', trigger.group(2)):
-        result = zip_search(trigger.group(2), bot.config.weather.api_key)
+        result = search('weather', trigger.group(2), bot.config.weather.api_key)
     # Otherwise, we assume it's a city name
     else:
-        result = location_search(trigger.group(2), bot.config.weather.api_key)
+        result = search('weather', trigger.group(2), bot.config.weather.api_key)
 
     if not result:
         return bot.reply("I don't know where that is.")
