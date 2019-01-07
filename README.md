@@ -1,6 +1,6 @@
 [![PyPI version](https://badge.fury.io/py/sopel-modules.weather.svg)](https://badge.fury.io/py/sopel-modules.weather)
 [![Build Status](https://travis-ci.org/RustyBower/sopel-weather.svg?branch=master)](https://travis-ci.org/RustyBower/sopel-weather)
-[![Coverage Status](https://coveralls.io/repos/github/RustyBower/sopel-weather/badge.svg)](https://coveralls.io/github/RustyBower/sopel-weather)
+[![Coverage Status](https://coveralls.io/repos/github/RustyBower/sopel-weather/badge.svg?branch=master)](https://coveralls.io/github/RustyBower/sopel-weather?branch=master)
 
 # sopel-weather
 sopel-weather is an weather lookup module for Sopel.
