@@ -40,7 +40,7 @@ def search(mode, query, api_key):
     results = None
 
     # Check if it's a WOEID
-    if re.match('^[0-9]+$', str(query)):
+    if re.match(r'^w[0-9]+$', str(query)):
         results = requests.get(
             'https://api.openweathermap.org/data/2.5/%s?id=%s&appid=%s&units=metric' % (mode, query, api_key))
     # Check if zip code (this doesn't cover all, but most)
@@ -270,17 +270,7 @@ def update_location(bot, trigger):
         bot.reply('Give me a location, like "London" or "90210" or "w2643743".')
         return NOLIMIT
 
-    # Check if WOEID
-    if re.match(r'^w\d+$', trigger.group(2)):
-        # Pop off the w from our trigger.group
-        result = search('weather', trigger.group(2)[1:], bot.config.weather.api_key)
-    # Check if zip code (this doesn't cover all, but most)
-    # https://en.wikipedia.org/wiki/List_of_postal_codes
-    elif re.match(r'^\d+$', trigger.group(2)):
-        result = search('weather', trigger.group(2), bot.config.weather.api_key)
-    # Otherwise, we assume it's a city name
-    else:
-        result = search('weather', trigger.group(2), bot.config.weather.api_key)
+    result = search('weather', trigger.group(2), bot.config.weather.api_key)
 
     if not result:
         return bot.reply("I don't know where that is.")
