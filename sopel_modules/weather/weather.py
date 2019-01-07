@@ -41,8 +41,9 @@ def search(mode, query, api_key):
 
     # Check if it's a WOEID
     if re.match(r'^w[0-9]+$', str(query)):
+        # Strip off the w from WOEID
         results = requests.get(
-            'https://api.openweathermap.org/data/2.5/%s?id=%s&appid=%s&units=metric' % (mode, query, api_key))
+            'https://api.openweathermap.org/data/2.5/%s?id=%s&appid=%s&units=metric' % (mode, query[1:], api_key))
     # Check if zip code (this doesn't cover all, but most)
     # https://en.wikipedia.org/wiki/List_of_postal_codes
     elif re.match(r'^\d+$', str(query)):
@@ -208,7 +209,7 @@ def say_info(bot, trigger, mode):
 
     if mode == 'weather':
         # Prepend w to ensure bot knows to search for WOEID
-        result = search('weather', 'w' + woeid, bot.config.weather.api_key)
+        result = search('weather', 'w' + str(woeid), bot.config.weather.api_key)
 
         if not result:
             return bot.reply("An error occurred")
