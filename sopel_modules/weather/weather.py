@@ -53,7 +53,7 @@ def search(mode, query, api_key):
     else:
         results = requests.get(
             'https://api.openweathermap.org/data/2.5/%s?q=%s&appid=%s&units=metric' % (mode, query, api_key))
-    if results is None or results.status_code is not 200:
+    if not results or results.status_code is not 200:
         return None
     return results.json()
 
@@ -61,7 +61,7 @@ def search(mode, query, api_key):
 def get_condition(parsed):
     try:
         condition = parsed['weather'][0]['main']
-    except (KeyError, ValueError):
+    except (KeyError, TypeError, ValueError):
         return 'unknown'
     return condition
 
@@ -69,7 +69,7 @@ def get_condition(parsed):
 def get_temp(parsed):
     try:
         temp = int(parsed['main']['temp'])
-    except (KeyError, ValueError):
+    except (KeyError, TypeError, ValueError):
         return 'unknown'
     return u'%d\u00B0C (%d\u00B0F)' % (temp, c_to_f(temp))
 
@@ -77,7 +77,7 @@ def get_temp(parsed):
 def get_humidity(parsed):
     try:
         humidity = parsed['main']['humidity']
-    except (KeyError, ValueError):
+    except (KeyError, TypeError, ValueError):
         return 'unknown'
     return "Humidity: %s%%" % humidity
 
@@ -88,7 +88,7 @@ def get_wind(parsed):
         m_s = float(round(wind_data['speed'], 1))
         speed = int(round(m_s * 1.94384, 0))
         degrees = int(wind_data['deg'])
-    except (KeyError, ValueError):
+    except (KeyError, TypeError, ValueError):
         return 'unknown'
 
     if speed < 1:
