@@ -207,7 +207,8 @@ def say_info(bot, trigger, mode):
         return bot.reply("I don't know where that is.")
 
     if mode == 'weather':
-        result = search('weather', woeid, bot.config.weather.api_key)
+        # Prepend w to ensure bot knows to search for WOEID
+        result = search('weather', 'w' + woeid, bot.config.weather.api_key)
 
         if not result:
             return bot.reply("An error occurred")
