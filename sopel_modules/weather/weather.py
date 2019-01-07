@@ -223,7 +223,7 @@ def say_info(bot, trigger, mode):
             return bot.say(u'%s, %s: %s, %s, %s, %s' % (location, country, temp, condition, humidity, wind))
 
     if mode == 'forecast':
-        result = search('forecast', woeid, bot.config.weather.api_key)
+        result = search('forecast', 'w' + str(woeid), bot.config.weather.api_key)
 
         if not result:
             return bot.reply("An error occurred")
