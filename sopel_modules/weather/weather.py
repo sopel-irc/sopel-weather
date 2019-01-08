@@ -68,10 +68,10 @@ def get_condition(parsed):
 
 def get_temp(parsed):
     try:
-        temp = int(parsed['main']['temp'])
+        temp = float(parsed['main']['temp'])
     except (KeyError, TypeError, ValueError):
         return 'unknown'
-    return u'%d\u00B0C (%d\u00B0F)' % (temp, c_to_f(temp))
+    return u'%d\u00B0C (%d\u00B0F)' % (round(temp), round(c_to_f(temp)))
 
 
 def get_humidity(parsed):
@@ -238,6 +238,7 @@ def say_info(bot, trigger, mode):
 
 
 @commands('weather', 'wea')
+@example('.weather')
 @example('.weather London')
 @example('.weather Seattle, US')
 @example('.weather 90210')
@@ -246,10 +247,11 @@ def weather_command(bot, trigger):
     """.weather location - Show the weather at the given location."""
     if bot.config.weather.api_key is None or bot.config.weather.api_key is '':
         return bot.reply("OpenWeatherMap API key missing. Please configure this module.")
-    say_info(bot, trigger, 'weather')
+    return say_info(bot, trigger, 'weather')
 
 
 @commands('forecast')
+@example('.forecast')
 @example('.forecast London')
 @example('.forecast Seattle, US')
 @example('.forecast 90210')
@@ -258,7 +260,7 @@ def forecast_command(bot, trigger):
     """.forecast location - Show the weather forecast for tomorrow at the given location."""
     if bot.config.weather.api_key is None or bot.config.weather.api_key is '':
         return bot.reply("OpenWeatherMap API key missing. Please configure this module.")
-    say_info(bot, trigger, 'forecast')
+    return say_info(bot, trigger, 'forecast')
 
 
 @commands('setlocation')
@@ -267,6 +269,9 @@ def forecast_command(bot, trigger):
 @example('.setlocation 90210')
 @example('.setlocation w7174408')
 def update_location(bot, trigger):
+    if bot.config.weather.api_key is None or bot.config.weather.api_key is '':
+        return bot.reply("OpenWeatherMap API key missing. Please configure this module.")
+
     """Set your default weather location."""
     if not trigger.group(2):
         bot.reply('Give me a location, like "London" or "90210" or "w2643743".')
@@ -283,5 +288,5 @@ def update_location(bot, trigger):
 
     city = result['name']
     country = result['sys']['country'] or ''
-    bot.reply('I now have you at WOEID %s (%s, %s)' %
-              (woeid, city, country))
+    return bot.reply('I now have you at WOEID %s (%s, %s)' %
+                     (woeid, city, country))
