@@ -26,11 +26,6 @@ Since Yahoo deprecated their weather API on January 3, 2019, a reimplementation 
 ```
 
 ## Requirements
-#### Ubuntu Requirements
-```
-apt install enchant
-```
-#### Python Requirements
 ```
 requests
 sopel
