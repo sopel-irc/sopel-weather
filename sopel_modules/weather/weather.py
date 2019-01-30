@@ -40,13 +40,13 @@ def search(mode, query, api_key):
     results = None
 
     # Check if it's a WOEID
-    if re.match(r'^w[0-9]+$', str(query)):
+    if re.match(r'^w[0-9]+$', query.encode('utf-8').decode('utf-8')):
         # Strip off the w from WOEID
         results = requests.get(
             'https://api.openweathermap.org/data/2.5/%s?id=%s&appid=%s&units=metric' % (mode, query[1:], api_key))
     # Check if zip code (this doesn't cover all, but most)
     # https://en.wikipedia.org/wiki/List_of_postal_codes
-    elif re.match(r'^\d+$', str(query)):
+    elif re.match(r'^\d+$', query.encode('utf-8').decode('utf-8')):
         results = requests.get(
             'https://api.openweathermap.org/data/2.5/%s?zip=%s&appid=%s&units=metric' % (mode, query, api_key))
     # Otherwise, we assume it's a city name or location
