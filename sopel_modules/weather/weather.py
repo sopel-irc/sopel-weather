@@ -245,7 +245,7 @@ def say_info(bot, trigger, mode):
 @example('.weather w7174408')
 def weather_command(bot, trigger):
     """.weather location - Show the weather at the given location."""
-    if bot.config.weather.api_key is None or bot.config.weather.api_key is '':
+    if bot.config.weather.api_key is None or bot.config.weather.api_key == '':
         return bot.reply("OpenWeatherMap API key missing. Please configure this module.")
     return say_info(bot, trigger, 'weather')
 
@@ -258,7 +258,7 @@ def weather_command(bot, trigger):
 @example('.forecast w7174408')
 def forecast_command(bot, trigger):
     """.forecast location - Show the weather forecast for tomorrow at the given location."""
-    if bot.config.weather.api_key is None or bot.config.weather.api_key is '':
+    if bot.config.weather.api_key is None or bot.config.weather.api_key == '':
         return bot.reply("OpenWeatherMap API key missing. Please configure this module.")
     return say_info(bot, trigger, 'forecast')
 
@@ -269,7 +269,7 @@ def forecast_command(bot, trigger):
 @example('.setlocation 90210')
 @example('.setlocation w7174408')
 def update_location(bot, trigger):
-    if bot.config.weather.api_key is None or bot.config.weather.api_key is '':
+    if bot.config.weather.api_key is None or bot.config.weather.api_key == '':
         return bot.reply("OpenWeatherMap API key missing. Please configure this module.")
 
     """Set your default weather location."""
