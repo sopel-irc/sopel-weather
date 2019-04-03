@@ -26,6 +26,12 @@ Since Yahoo deprecated their weather API on January 3, 2019, a reimplementation 
 ```
 
 ## Requirements
+#### API Key
+```
+https://openweathermap.org/api
+```
+
+#### Python Requirements
 ```
 requests
 sopel

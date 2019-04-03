@@ -3,8 +3,8 @@
 from __future__ import unicode_literals, absolute_import, print_function, division
 
 import pytest
-import requests
 import requests_mock
+import sopel.tools.target
 
 from sopel.trigger import PreTrigger, Trigger
 from sopel.test_tools import MockSopel, MockSopelWrapper
@@ -58,6 +58,21 @@ def weather_results():
 
 
 @pytest.fixture
+def weather_results_utf8():
+    with requests_mock.mock() as m:
+        m.get('https://api.openweathermap.org/data/2.5/weather?id=655977&appid=123456&units=metric',
+              json={"coord": {"lon": 25.08, "lat": 60.47},
+                    "weather": [{"id": 800, "main": "Clear", "description": "clear sky", "icon": "01d"}],
+                    "base": "stations",
+                    "main": {"temp": 10.85, "pressure": 1022, "humidity": 29, "temp_min": 10.56, "temp_max": 11.67},
+                    "visibility": 10000, "wind": {"speed": 6.7, "deg": 160}, "clouds": {"all": 0}, "dt": 1554295687,
+                    "sys": {"type": 1, "id": 1332, "message": 0.0038, "country": "FI", "sunrise": 1554262754,
+                            "sunset": 1554311195}, "id": 655977, "name": "Järvenpää", "cod": 200},
+              status_code=200)
+        return weather.search('weather', 'w655977', '123456')
+
+
+@pytest.fixture
 def forecast_results():
     with requests_mock.mock() as m:
         m.get('https://api.openweathermap.org/data/2.5/forecast?id=2643743&appid=123456&units=metric',
@@ -83,7 +98,8 @@ def forecast_results():
                               "dt_txt": "2019-01-08 00:00:00"},
                              {"dt": 1546916400,
                               "main": {"temp": 5.29, "temp_min": 5.29, "temp_max": 5.29},
-                              "weather": [{"id": 802, "main": "Clouds", "description": "scattered clouds", "icon": "03n"}],
+                              "weather": [
+                                  {"id": 802, "main": "Clouds", "description": "scattered clouds", "icon": "03n"}],
                               "dt_txt": "2019-01-08 03:00:00"},
                              {"dt": 1546927200,
                               "main": {"temp": 5.71, "temp_min": 5.71, "temp_max": 5.71},
@@ -316,6 +332,27 @@ def test_get_wind(weather_results):
     weather_results['wind']['speed'] = 50
     wind = weather.get_wind(weather_results)
     assert wind == 'Hurricane 50.0m/s (↑)'
+
+
+def test_get_condition_utf8(weather_results_utf8):
+    condition = weather.get_condition('')
+    assert condition == 'unknown'
+    condition = weather.get_condition(weather_results_utf8)
+    assert condition == 'Clear'
+
+
+def test_get_temp_utf8(weather_results_utf8):
+    temp = weather.get_temp('')
+    assert temp == 'unknown'
+    temp = weather.get_temp(weather_results_utf8)
+    assert temp == '11°C (52°F)'
+
+
+def test_get_humidity_utf8(weather_results_utf8):
+    humidity = weather.get_humidity('')
+    assert humidity == 'unknown'
+    humidity = weather.get_humidity(weather_results_utf8)
+    assert humidity == 'Humidity: 29%'
 
 
 # TODO - Add the remaining condition tests
