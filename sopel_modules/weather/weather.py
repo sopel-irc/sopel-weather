@@ -53,7 +53,7 @@ def search(mode, query, api_key):
     else:
         results = requests.get(
             'https://api.openweathermap.org/data/2.5/%s?q=%s&appid=%s&units=metric' % (mode, query, api_key))
-    if not results or results.status_code == 200:
+    if not results or results.status_code != 200:
         return None
     return results.json()
 
