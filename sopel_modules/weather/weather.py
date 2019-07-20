@@ -15,6 +15,7 @@ import requests
 
 # Define our sopel weather configuration
 class WeatherSection(StaticSection):
+    source = ValidatedAttribute('source', str, default='openweathermap')
     api_key = ValidatedAttribute('api_key', str, default='')
 
 
@@ -186,7 +187,6 @@ def get_tomorrow_low(results):
 
 def say_info(bot, trigger, mode):
     location = trigger.group(2)
-    woeid = ''
     if not location:
         woeid = bot.db.get_nick_value(trigger.nick, 'woeid')
         if not woeid:
@@ -203,6 +203,10 @@ def say_info(bot, trigger, mode):
             if not result:
                 return bot.reply("I don't know where that is.")
             woeid = result['id']
+
+    # Temporary solution because OpenWeatherAPI suddenly started returning 0 for city_id
+    if woeid == 0:
+        return bot.reply("ERROR: API did not return a WOEID")
 
     if not woeid:
         return bot.reply("I don't know where that is.")
@@ -246,7 +250,7 @@ def say_info(bot, trigger, mode):
 def weather_command(bot, trigger):
     """.weather location - Show the weather at the given location."""
     if bot.config.weather.api_key is None or bot.config.weather.api_key == '':
-        return bot.reply("OpenWeatherMap API key missing. Please configure this module.")
+        return bot.reply("API key missing. Please configure this module.")
     return say_info(bot, trigger, 'weather')
 
 
@@ -259,7 +263,7 @@ def weather_command(bot, trigger):
 def forecast_command(bot, trigger):
     """.forecast location - Show the weather forecast for tomorrow at the given location."""
     if bot.config.weather.api_key is None or bot.config.weather.api_key == '':
-        return bot.reply("OpenWeatherMap API key missing. Please configure this module.")
+        return bot.reply("API key missing. Please configure this module.")
     return say_info(bot, trigger, 'forecast')
 
 
@@ -270,7 +274,7 @@ def forecast_command(bot, trigger):
 @example('.setlocation w7174408')
 def update_location(bot, trigger):
     if bot.config.weather.api_key is None or bot.config.weather.api_key == '':
-        return bot.reply("OpenWeatherMap API key missing. Please configure this module.")
+        return bot.reply("API key missing. Please configure this module.")
 
     """Set your default weather location."""
     if not trigger.group(2):
