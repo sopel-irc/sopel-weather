@@ -208,9 +208,6 @@ def say_info(bot, trigger, mode):
     if woeid == 0:
         return bot.reply("ERROR: API did not return a WOEID")
 
-    if not woeid:
-        return bot.reply("I don't know where that is.")
-
     if mode == 'weather':
         # Prepend w to ensure bot knows to search for WOEID
         result = search('weather', 'w' + str(woeid), bot.config.weather.api_key)
