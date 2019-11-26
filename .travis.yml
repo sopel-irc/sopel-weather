@@ -6,8 +6,10 @@ python:
   - '3.8'
 before_install:
   - pip install git+https://github.com/sopel-irc/sopel.git
-install: pip install -e .
+install:
+  - pip install -e .
 script:
+  - python setup.py test
   - pycodestyle --show-source --ignore=E501,E402,E722  ./
   - coverage run -m py.test -v .
   - coverage report
