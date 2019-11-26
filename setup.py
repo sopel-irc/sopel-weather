@@ -12,7 +12,7 @@ if __name__ == '__main__':
               os.path.dirname(os.path.abspath(__file__))),
           file=sys.stderr)
 
-with open('README.md') as readme_file:
+with open('README.rst') as readme_file:
     readme = readme_file.read()
 
 with open('NEWS') as history_file:
