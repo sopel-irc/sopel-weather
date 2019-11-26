@@ -8,7 +8,7 @@ before_install:
   - pip install git+https://github.com/sopel-irc/sopel.git
 install:
   - pip install -e .
-  - pip install ".[tests]"
+  - pip install -r tests/requirements.txt
 script:
   - pycodestyle --show-source --ignore=E501,E402,E722  ./
   - coverage run -m py.test -v .
