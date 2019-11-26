@@ -5,7 +5,7 @@
 |version| |build| |issues| |alerts| |coverage-status| |license|
 
 Introduction
-------------
+============
 sopel-weather is an weather lookup module for Sopel.
 
 Since Yahoo deprecated their weather API on January 3, 2019, a reimplementation of the weather module was necessary 
