@@ -30,7 +30,7 @@ setup(
     version='0.0.7',
     description='A working re-implementation of the weather module for Sopel',
     long_description=readme + '\n\n' + history,
-    long_description_content_type='text/markdown',  # This is important!
+    long_description_content_type='text/x-rst',
     author='Rusty Bower',
     author_email='rusty@rustybower.com',
     url='http://github.com/rustybower/sopel-weather',
