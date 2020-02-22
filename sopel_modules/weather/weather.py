@@ -138,9 +138,15 @@ def get_geocoords(bot, trigger):
         location = '{}, {}, {}'.format(address['town'],
                                        address['state'],
                                        address['country_code'].upper())
-    else:
+    elif 'county' in address.keys():
+        location = '{}, {}, {}'.format(address['county'],
+                                       address['state'],
+                                       address['country_code'].upper())
+    elif 'city_district' in address.keys():
         location = '{}, {}'.format(address['city_district'],
                                    address['country_code'].upper())
+    else:
+        location = 'Unknown'
 
     return latitude, longitude, location
 
