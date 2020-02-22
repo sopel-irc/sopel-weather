@@ -159,7 +159,7 @@ def get_forecast(bot, trigger):
                    "London, for example.".format(command=trigger.group(1),
                                                  pfx=bot.config.core.help_prefix)
     else:
-        latitude, longitude, location = get_geocoords(trigger.group(2))
+        latitude, longitude, location = get_geocoords(bot, trigger)
 
     # Query DarkSky
     url = 'https://api.darksky.net/forecast/{}/{},{}'.format(
@@ -201,7 +201,7 @@ def get_weather(bot, trigger):
                    "London, for example.".format(command=trigger.group(1),
                                                  pfx=bot.config.core.help_prefix)
     else:
-        latitude, longitude, location = get_geocoords(trigger.group(2))
+        latitude, longitude, location = get_geocoords(bot, trigger)
 
     # Query DarkSky
     url = 'https://api.darksky.net/forecast/{}/{},{}'.format(
