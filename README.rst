@@ -21,6 +21,10 @@ Current Weather
     .weather seattle, us
     .weather london
 
+.. code-block::
+
+    Paris, Ile-de-France, FR: 6°C (42°F), Clear, Humidity: 83%, UV Index: 0, Gentle breeze 4.0m/s (↗)
+
 24h Forecast
 ~~~~~~~~~~~~
 .. code-block::
@@ -29,22 +33,41 @@ Current Weather
     .forecast seattle, us
     .forecast london
 
+.. code-block::
+
+ Forecast: Paris, Ile-de-France, FR: Light rain tomorrow through next Saturday, High: 15°C (59°F), Low: 11°C (52°F), UV Index: 2
+
 Customize User Location
 ~~~~~~~~~~~~~~~~~~~~~~~
 .. code-block::
 
     .setlocation london # Sets location by city name
-    .setlocation w2643743 # Sets location by WOEID (We are prepending w in front of WOEIDs because they collide with zips)
-    .setlocation 98101 # Sets location by zip code
+    .setlocation 98101 # Sets location by US zip code
+
+.. code-block::
+
+    I now have you at Paris, Ile-de-France, FR
 
 Requirements
 ============
 
-API Key
-~~~~~~~
+Modern weather APIs require Latitude & Longitude as inputs to their APIs, so we need to leverage a GeoCoords API to convert location searches to coordinates.
+
+API Keys
+~~~~~~~~
+
+LocationIQ
+
+
 .. code-block::
 
-    https://openweathermap.org/api
+    https://locationiq.com/
+
+Dark Sky
+
+.. code-block::
+
+    https://darksky.net/
 
 Python Requirements
 ~~~~~~~~~~~~~~~~~~~

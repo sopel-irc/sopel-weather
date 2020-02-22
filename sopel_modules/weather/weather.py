@@ -15,8 +15,10 @@ import requests
 
 # Define our sopel weather configuration
 class WeatherSection(StaticSection):
-    source = ValidatedAttribute('source', str, default='openweathermap')
-    api_key = ValidatedAttribute('api_key', str, default='')
+    geocoords_provider = ValidatedAttribute('geocoords_provider', str, default='LocationIQ')
+    geocoords_api_key = ValidatedAttribute('geocoords_api_key', str, default='')
+    weather_provider = ValidatedAttribute('weather_provider', str, default='DarkSky')
+    weather_api_key = ValidatedAttribute('weather_api_key', str, default='')
 
 
 def setup(bot):
@@ -27,70 +29,43 @@ def setup(bot):
 def configure(config):
     config.define_section('weather', WeatherSection, validate=False)
     config.weather.configure_setting(
-        'api_key',
-        'Enter openweathermap.org API Key:'
+        'geocoords_provider',
+        'Enter GeoCoords API Key:'
+    )
+    config.weather.configure_setting(
+        'geocoords_api_key',
+        'Enter GeoCoords API Key:'
+    )
+    config.weather.configure_setting(
+        'weather_provider',
+        'Enter Weather API Provider:'
+    )
+    config.weather.configure_setting(
+        'weather_api_key',
+        'Enter Weather API Key:'
     )
 
 
-def search(mode, query, api_key):
-    """
-    Find the first Where On Earth ID for the given query. Result is the etree
-    node for the result, so that location data can still be retrieved. Returns
-    None if there is no result, or the woeid field is empty.
-    """
-    results = None
-
-    # Check if it's a WOEID
-    if re.match(r'^w[0-9]+$', query.encode('utf-8').decode('utf-8')):
-        # Strip off the w from WOEID
-        results = requests.get(
-            'https://api.openweathermap.org/data/2.5/%s?id=%s&appid=%s&units=metric' % (mode, query[1:], api_key))
-    # Check if zip code (this doesn't cover all, but most)
-    # https://en.wikipedia.org/wiki/List_of_postal_codes
-    elif re.match(r'^\d+$', query.encode('utf-8').decode('utf-8')):
-        results = requests.get(
-            'https://api.openweathermap.org/data/2.5/%s?zip=%s&appid=%s&units=metric' % (mode, query, api_key))
-    # Otherwise, we assume it's a city name or location
-    else:
-        results = requests.get(
-            'https://api.openweathermap.org/data/2.5/%s?q=%s&appid=%s&units=metric' % (mode, query, api_key))
-    if not results or results.status_code != 200:
-        return None
-    return results.json()
-
-
-def get_condition(parsed):
+def get_temp(temp):
     try:
-        condition = parsed['weather'][0]['main']
-    except (KeyError, TypeError, ValueError):
-        return 'unknown'
-    return condition
-
-
-def get_temp(parsed):
-    try:
-        temp = float(parsed['main']['temp'])
+        temp = float(temp)
     except (KeyError, TypeError, ValueError):
         return 'unknown'
     return u'%d\u00B0C (%d\u00B0F)' % (round(temp), round(c_to_f(temp)))
 
 
-def get_humidity(parsed):
+def get_humidity(humidity):
     try:
-        humidity = parsed['main']['humidity']
+        humidity = int(humidity * 100)
     except (KeyError, TypeError, ValueError):
         return 'unknown'
     return "Humidity: %s%%" % humidity
 
 
-def get_wind(parsed):
-    try:
-        wind_data = parsed['wind']
-        m_s = float(round(wind_data['speed'], 1))
-        speed = int(round(m_s * 1.94384, 0))
-        degrees = int(wind_data['deg'])
-    except (KeyError, TypeError, ValueError):
-        return 'unknown'
+def get_wind(speed, bearing):
+    m_s = float(round(speed, 1))
+    speed = int(round(m_s * 1.94384, 0))
+    bearing = int(bearing)
 
     if speed < 1:
         description = 'Calm'
@@ -119,123 +94,136 @@ def get_wind(parsed):
     else:
         description = 'Hurricane'
 
-    if (degrees <= 22.5) or (degrees > 337.5):
-        degrees = u'\u2193'
-    elif (degrees > 22.5) and (degrees <= 67.5):
-        degrees = u'\u2199'
-    elif (degrees > 67.5) and (degrees <= 112.5):
-        degrees = u'\u2190'
-    elif (degrees > 112.5) and (degrees <= 157.5):
-        degrees = u'\u2196'
-    elif (degrees > 157.5) and (degrees <= 202.5):
-        degrees = u'\u2191'
-    elif (degrees > 202.5) and (degrees <= 247.5):
-        degrees = u'\u2197'
-    elif (degrees > 247.5) and (degrees <= 292.5):
-        degrees = u'\u2192'
-    elif (degrees > 292.5) and (degrees <= 337.5):
-        degrees = u'\u2198'
+    if (bearing <= 22.5) or (bearing > 337.5):
+        bearing = u'\u2193'
+    elif (bearing > 22.5) and (bearing <= 67.5):
+        bearing = u'\u2199'
+    elif (bearing > 67.5) and (bearing <= 112.5):
+        bearing = u'\u2190'
+    elif (bearing > 112.5) and (bearing <= 157.5):
+        bearing = u'\u2196'
+    elif (bearing > 157.5) and (bearing <= 202.5):
+        bearing = u'\u2191'
+    elif (bearing > 202.5) and (bearing <= 247.5):
+        bearing = u'\u2197'
+    elif (bearing > 247.5) and (bearing <= 292.5):
+        bearing = u'\u2192'
+    elif (bearing > 292.5) and (bearing <= 337.5):
+        bearing = u'\u2198'
 
-    return description + ' ' + str(m_s) + 'm/s (' + degrees + ')'
+    return description + ' ' + str(m_s) + 'm/s (' + bearing + ')'
 
 
-def get_tomorrow_condition(results):
-    # Only using the first 8 results to get the next 24 hours (8 * 3 hours)
-    # This is super ugly with list comprehensions
-    if [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Snow']:
-        return sorted([x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Snow'],
-                      key=lambda k: k['id'], reverse=True)[0]['description'].title()
-    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Thunderstorm']:
-        return sorted([x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Thunderstorm'],
-                      key=lambda k: k['id'], reverse=True)[0]['description'].title()
-    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Rain']:
-        return sorted([x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Rain'],
-                      key=lambda k: k['id'], reverse=True)[0]['description'].title()
-    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Drizzle']:
-        return sorted([x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Drizzle'],
-                      key=lambda k: k['id'], reverse=True)[0]['description'].title()
-    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Atmosphere']:
-        return sorted([x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Atmosphere'],
-                      key=lambda k: k['id'], reverse=True)[0]['description'].title()
-    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Clouds']:
-        return sorted([x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Clouds'],
-                      key=lambda k: k['id'], reverse=True)[0]['description'].title()
-    elif [x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Clear']:
-        return sorted([x['weather'][0] for x in results['list'][:8] if x['weather'][0]['main'] == 'Clear'],
-                      key=lambda k: k['id'], reverse=True)[0]['description'].title()
+def get_geocoords(bot, trigger):
+    url = "https://us1.locationiq.com/v1/search.php"  # This can be updated to their EU endpoint for EU users
+    data = {
+        'key': bot.config.weather.geocoords_api_key,
+        'q': trigger.group(2),
+        'format': 'json',
+        'addressdetails': 1,
+        'limit': 1
+    }
+    r = requests.get(url, params=data)
+
+    latitude = r.json()[0]['lat']
+    longitude = r.json()[0]['lon']
+    address = r.json()[0]['address']
+
+    # Zip codes give us town versus city
+    if 'city' in address.keys():
+        location = '{}, {}, {}'.format(address['city'],
+                                       address['state'],
+                                       address['country_code'].upper())
+    elif 'town' in address.keys():
+        location = '{}, {}, {}'.format(address['town'],
+                                       address['state'],
+                                       address['country_code'].upper())
     else:
-        return 'Unknown'
+        location = '{}, {}'.format(address['city_district'],
+                                   address['country_code'].upper())
+
+    return latitude, longitude, location
 
 
-def get_tomorrow_high(results):
-    temp = None
-    # Only using the first 8 results to get the next 24 hours (8 * 3 hours)
-    for _ in results['list'][:8]:
-        if temp is None or _['main']['temp_max'] > temp:
-            temp = _['main']['temp_max']
-    return u'High: %d\u00B0C (%d\u00B0F)' % (temp, c_to_f(temp))
-
-
-def get_tomorrow_low(results):
-    temp = None
-    # Only using the first 8 results to get the next 24 hours (8 * 3 hours)
-    for _ in results['list'][:8]:
-        if temp is None or _['main']['temp_min'] < temp:
-            temp = _['main']['temp_min']
-    return u'Low: %d\u00B0C (%d\u00B0F)' % (temp, c_to_f(temp))
-
-
-def say_info(bot, trigger, mode):
+# 24h Forecast: Oshkosh, US: Broken Clouds, High: 0°C (32°F), Low: -7°C (19°F)
+def get_forecast(bot, trigger):
     location = trigger.group(2)
     if not location:
-        woeid = bot.db.get_nick_value(trigger.nick, 'woeid')
-        if not woeid:
-            return bot.reply("I don't know where you live. "
-                             "Give me a location, like {pfx}{command} London, "
-                             "or tell me where you live by saying {pfx}setlocation "
-                             "London, for example.".format(command=trigger.group(1),
-                                                           pfx=bot.config.core.help_prefix))
+        latitude = bot.db.get_nick_value(trigger.nick, 'latitude')
+        longitude = bot.db.get_nick_value(trigger.nick, 'longitude')
+        location = bot.db.get_nick_value(trigger.nick, 'location')
+        if not latitude and not longitude:
+            return "I don't know where you live. " \
+                   "Give me a location, like {pfx}{command} London, " \
+                   "or tell me where you live by saying {pfx}setlocation " \
+                   "London, for example.".format(command=trigger.group(1),
+                                                 pfx=bot.config.core.help_prefix)
     else:
-        location = location.strip()
-        woeid = bot.db.get_nick_value(location, 'woeid')
-        if woeid is None:
-            result = search('weather', location, bot.config.weather.api_key)
-            if not result:
-                return bot.reply("I don't know where that is.")
-            woeid = result['id']
+        latitude, longitude, location = get_geocoords(trigger.group(2))
 
-    # Temporary solution because OpenWeatherAPI suddenly started returning 0 for city_id
-    if woeid == 0:
-        return bot.reply("ERROR: API did not return a WOEID")
+    # Query DarkSky
+    url = 'https://api.darksky.net/forecast/{}/{},{}'.format(
+        bot.config.weather.weather_api_key,
+        latitude,
+        longitude
+    )
+    data = {
+        'exclude': 'currently,minutely,hourly,alerts,flags',  # Exclude extra data we don't want/need
+        'units': 'si'
+    }
+    r = requests.get(url, params=data)
+    data = r.json()
+    if r.status_code != 200:
+        return 'Error: {}'.format(data['error'])
+    else:
+        condition = data['daily']['summary'].strip('.')  # Remove strange period at end of summary
+        high_temp = get_temp(data['daily']['data'][0]['temperatureHigh'])
+        low_temp = get_temp(data['daily']['data'][0]['temperatureLow'])
+        uvindex = data['daily']['data'][0]['uvIndex']
+        # 24h Forecast: Oshkosh, US: Broken Clouds, High: 0°C (32°F), Low: -7°C (19°F)
+        return u'Forecast: %s: %s, High: %s, Low: %s, UV Index: %s' % (location,
+                                                                       condition,
+                                                                       high_temp,
+                                                                       low_temp,
+                                                                       uvindex)
 
-    if mode == 'weather':
-        # Prepend w to ensure bot knows to search for WOEID
-        result = search('weather', 'w' + str(woeid), bot.config.weather.api_key)
 
-        if not result:
-            return bot.reply("An error occurred")
-        else:
-            location = result['name']
-            country = result['sys']['country']
-            temp = get_temp(result)
-            condition = get_condition(result)
-            humidity = get_humidity(result)
-            wind = get_wind(result)
-            return bot.say(u'%s, %s: %s, %s, %s, %s' % (location, country, temp, condition, humidity, wind))
+def get_weather(bot, trigger):
+    location = trigger.group(2)
+    if not location:
+        latitude = bot.db.get_nick_value(trigger.nick, 'latitude')
+        longitude = bot.db.get_nick_value(trigger.nick, 'longitude')
+        location = bot.db.get_nick_value(trigger.nick, 'location')
+        if not latitude and not longitude:
+            return "I don't know where you live. " \
+                   "Give me a location, like {pfx}{command} London, " \
+                   "or tell me where you live by saying {pfx}setlocation " \
+                   "London, for example.".format(command=trigger.group(1),
+                                                 pfx=bot.config.core.help_prefix)
+    else:
+        latitude, longitude, location = get_geocoords(trigger.group(2))
 
-    if mode == 'forecast':
-        result = search('forecast', 'w' + str(woeid), bot.config.weather.api_key)
-
-        if not result:
-            return bot.reply("An error occurred")
-        else:
-            location = result['city']['name']
-            country = result['city']['country']
-            tomorrow_condition = get_tomorrow_condition(result)
-            tomorrow_high = get_tomorrow_high(result)
-            tomorrow_low = get_tomorrow_low(result)
-            return bot.say(u'24h Forecast: %s, %s: %s, %s, %s' % (location, country, tomorrow_condition, tomorrow_high, tomorrow_low))
-    return
+    # Query DarkSky
+    url = 'https://api.darksky.net/forecast/{}/{},{}'.format(
+        bot.config.weather.weather_api_key,
+        latitude,
+        longitude
+    )
+    data = {
+        'exclude': 'minutely,hourly,daily,alerts,flags',  # Exclude extra data we don't want/need
+        'units': 'si'
+    }
+    r = requests.get(url, params=data)
+    data = r.json()
+    if r.status_code != 200:
+        return 'Error: {}'.format(data['error'])
+    else:
+        temp = get_temp(data['currently']['temperature'])
+        condition = data['currently']['summary']
+        humidity = get_humidity(data['currently']['humidity'])
+        wind = get_wind(data['currently']['windSpeed'], data['currently']['windBearing'])
+        uvindex = data['currently']['uvIndex']
+        return u'%s: %s, %s, %s, UV Index: %s, %s' % (location, temp, condition, humidity, uvindex, wind)
 
 
 @commands('weather', 'wea')
@@ -243,12 +231,13 @@ def say_info(bot, trigger, mode):
 @example('.weather London')
 @example('.weather Seattle, US')
 @example('.weather 90210')
-@example('.weather w7174408')
 def weather_command(bot, trigger):
     """.weather location - Show the weather at the given location."""
-    if bot.config.weather.api_key is None or bot.config.weather.api_key == '':
-        return bot.reply("API key missing. Please configure this module.")
-    return say_info(bot, trigger, 'weather')
+    if bot.config.weather.weather_api_key is None or bot.config.weather.weather_api_key == '':
+        return bot.reply("Weather API key missing. Please configure this module.")
+    if bot.config.weather.geocoords_api_key is None or bot.config.weather.geocoords_api_key == '':
+        return bot.reply("GeoCoords API key missing. Please configure this module.")
+    return bot.say(get_weather(bot, trigger))
 
 
 @commands('forecast')
@@ -256,12 +245,13 @@ def weather_command(bot, trigger):
 @example('.forecast London')
 @example('.forecast Seattle, US')
 @example('.forecast 90210')
-@example('.forecast w7174408')
 def forecast_command(bot, trigger):
     """.forecast location - Show the weather forecast for tomorrow at the given location."""
-    if bot.config.weather.api_key is None or bot.config.weather.api_key == '':
-        return bot.reply("API key missing. Please configure this module.")
-    return say_info(bot, trigger, 'forecast')
+    if bot.config.weather.weather_api_key is None or bot.config.weather.weather_api_key == '':
+        return bot.reply("Weather API key missing. Please configure this module.")
+    if bot.config.weather.geocoords_api_key is None or bot.config.weather.geocoords_api_key == '':
+        return bot.reply("GeoCoords API key missing. Please configure this module.")
+    return bot.say(get_forecast(bot, trigger))
 
 
 @commands('setlocation')
@@ -270,24 +260,20 @@ def forecast_command(bot, trigger):
 @example('.setlocation 90210')
 @example('.setlocation w7174408')
 def update_location(bot, trigger):
-    if bot.config.weather.api_key is None or bot.config.weather.api_key == '':
-        return bot.reply("API key missing. Please configure this module.")
+    if bot.config.weather.geocoords_api_key is None or bot.config.weather.geocoords_api_key == '':
+        return bot.reply("GeoCoords API key missing. Please configure this module.")
 
-    """Set your default weather location."""
+    # Return an error if no location is provided
     if not trigger.group(2):
-        bot.reply('Give me a location, like "London" or "90210" or "w2643743".')
+        bot.reply('Give me a location, like "London" or "90210".')
         return NOLIMIT
 
-    result = search('weather', trigger.group(2), bot.config.weather.api_key)
+    # Get GeoCoords
+    latitude, longitude, location = get_geocoords(bot, trigger)
 
-    if not result:
-        return bot.reply("I don't know where that is.")
+    # Assign Latitude & Longitude to user
+    bot.db.set_nick_value(trigger.nick, 'latitude', latitude)
+    bot.db.set_nick_value(trigger.nick, 'longitude', longitude)
+    bot.db.set_nick_value(trigger.nick, 'location', location)
 
-    woeid = result['id']
-
-    bot.db.set_nick_value(trigger.nick, 'woeid', woeid)
-
-    city = result['name']
-    country = result['sys']['country'] or ''
-    return bot.reply('I now have you at WOEID %s (%s, %s)' %
-                     (woeid, city, country))
+    return bot.reply('I now have you at {}'.format(location))
