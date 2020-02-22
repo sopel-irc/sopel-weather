@@ -123,6 +123,8 @@ def get_geocoords(bot, trigger):
         'limit': 1
     }
     r = requests.get(url, params=data)
+    if r.status_code != 200:
+        raise Exception(r.json()['error'])
 
     latitude = r.json()[0]['lat']
     longitude = r.json()[0]['lon']
@@ -179,7 +181,7 @@ def get_forecast(bot, trigger):
     r = requests.get(url, params=data)
     data = r.json()
     if r.status_code != 200:
-        return 'Error: {}'.format(data['error'])
+        raise Exception(data['error'])
     else:
         condition = data['daily']['summary'].strip('.')  # Remove strange period at end of summary
         high_temp = get_temp(data['daily']['data'][0]['temperatureHigh'])
