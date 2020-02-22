@@ -29,7 +29,7 @@ def configure(config):
     config.define_section('weather', WeatherSection, validate=False)
     config.weather.configure_setting(
         'geocoords_provider',
-        'Enter GeoCoords API Key:'
+        'Enter GeoCoords API Provider:'
     )
     config.weather.configure_setting(
         'geocoords_api_key',
