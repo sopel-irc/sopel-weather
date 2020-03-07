@@ -9,6 +9,8 @@ from sopel.config.types import StaticSection, ValidatedAttribute
 from sopel.module import commands, example, NOLIMIT
 from sopel.modules.units import c_to_f
 
+from datetime import datetime
+
 import requests
 
 
@@ -183,16 +185,20 @@ def get_forecast(bot, trigger):
     if r.status_code != 200:
         raise Exception(data['error'])
     else:
-        condition = data['daily']['summary'].strip('.')  # Remove strange period at end of summary
-        high_temp = get_temp(data['daily']['data'][0]['temperatureHigh'])
-        low_temp = get_temp(data['daily']['data'][0]['temperatureLow'])
-        uvindex = data['daily']['data'][0]['uvIndex']
-        # 24h Forecast: Oshkosh, US: Broken Clouds, High: 0°C (32°F), Low: -7°C (19°F)
-        return u'Forecast: %s: %s, High: %s, Low: %s, UV Index: %s' % (location,
-                                                                       condition,
-                                                                       high_temp,
-                                                                       low_temp,
-                                                                       uvindex)
+        forecast = ''
+        forecast += '{location}'.format(location=location)
+        for day in data['daily']['data'][0:4]:
+            dow = datetime.fromtimestamp(day['time']).strftime('%A')
+            summary = day['summary'].strip('.')
+            high_temp = get_temp(day['temperatureHigh'])
+            low_temp = get_temp(day['temperatureLow'])
+            forecast += ' :: {dow} - {summary} - {high_temp} / {low_temp}'.format(
+                dow=dow,
+                summary=summary,
+                high_temp=high_temp,
+                low_temp=low_temp
+            )
+        return forecast
 
 
 def get_weather(bot, trigger):
