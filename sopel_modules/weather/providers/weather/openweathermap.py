@@ -18,7 +18,7 @@ def openweathermap_forecast(bot, latitude, longitude, location):
     r = requests.get(url, params=params)
     data = r.json()
     if r.status_code != 200:
-        raise Exception('Error: {}'.format(data['error']))
+        raise Exception('Error: {}'.format(data['message']))
     else:
         weather_data = {'location': location, 'data': []}
         for day in data['daily'][0:4]:
@@ -44,8 +44,9 @@ def openweathermap_weather(bot, latitude, longitude, location):
     }
     r = requests.get(url, params=params)
     data = r.json()
+    print(data)
     if r.status_code != 200:
-        raise Exception('Error: {}'.format(data['error']))
+        raise Exception('Error: {}'.format(data['message']))
     else:
         weather_data = {
             'location': location,
