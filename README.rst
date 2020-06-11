@@ -69,6 +69,12 @@ Dark Sky
 
     https://darksky.net/
 
+OpenWeatherMap
+
+.. code-block::
+
+    https://openweathermap.org/
+
 Python Requirements
 ~~~~~~~~~~~~~~~~~~~
 .. code-block::

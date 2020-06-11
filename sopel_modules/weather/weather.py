@@ -5,20 +5,28 @@
 # Licensed under the Eiffel Forum License 2.
 from __future__ import unicode_literals, absolute_import, print_function, division
 
-from sopel.config.types import StaticSection, ValidatedAttribute
-from sopel.module import commands, example, NOLIMIT
-from sopel.modules.units import c_to_f
+import requests
 
 from datetime import datetime
 
-import requests
+from sopel.config.types import NO_DEFAULT, ChoiceAttribute, StaticSection, ValidatedAttribute
+from sopel.module import commands, example, NOLIMIT
+from sopel.modules.units import c_to_f
+
+from .providers.weather.darksky import darksky_forecast, darksky_weather
+from .providers.weather.openweathermap import openweathermap_forecast, openweathermap_weather
+
+WEATHER_PROVIDERS = [
+    'darksky',
+    'openweathermap',
+]
 
 
 # Define our sopel weather configuration
 class WeatherSection(StaticSection):
-    geocoords_provider = ValidatedAttribute('geocoords_provider', str, default='LocationIQ')
+    geocoords_provider = ValidatedAttribute('geocoords_provider', str, default='locationiq')
     geocoords_api_key = ValidatedAttribute('geocoords_api_key', str, default='')
-    weather_provider = ValidatedAttribute('weather_provider', str, default='DarkSky')
+    weather_provider = ChoiceAttribute('weather_provider', WEATHER_PROVIDERS, default=NO_DEFAULT)
     weather_api_key = ValidatedAttribute('weather_api_key', str, default='')
 
 
@@ -31,19 +39,23 @@ def configure(config):
     config.define_section('weather', WeatherSection, validate=False)
     config.weather.configure_setting(
         'geocoords_provider',
-        'Enter GeoCoords API Provider:'
+        'Enter GeoCoords API Provider:',
+        default=NO_DEFAULT
     )
     config.weather.configure_setting(
         'geocoords_api_key',
-        'Enter GeoCoords API Key:'
+        'Enter GeoCoords API Key:',
+        default=NO_DEFAULT
     )
     config.weather.configure_setting(
         'weather_provider',
-        'Enter Weather API Provider:'
+        'Enter Weather API Provider: ({}):'.format(', '.join(WEATHER_PROVIDERS)),
+        default=NO_DEFAULT
     )
     config.weather.configure_setting(
         'weather_api_key',
-        'Enter Weather API Key:'
+        'Enter Weather API Key:',
+        default=NO_DEFAULT
     )
 
 
@@ -160,45 +172,18 @@ def get_forecast(bot, trigger):
     if not location:
         latitude = bot.db.get_nick_value(trigger.nick, 'latitude')
         longitude = bot.db.get_nick_value(trigger.nick, 'longitude')
-        location = bot.db.get_nick_value(trigger.nick, 'location')
-        if not latitude and not longitude:
-            return "I don't know where you live. " \
-                   "Give me a location, like {pfx}{command} London, " \
-                   "or tell me where you live by saying {pfx}setlocation " \
-                   "London, for example.".format(command=trigger.group(1),
-                                                 pfx=bot.config.core.help_prefix)
     else:
         latitude, longitude, location = get_geocoords(bot, trigger)
 
-    # Query DarkSky
-    url = 'https://api.darksky.net/forecast/{}/{},{}'.format(
-        bot.config.weather.weather_api_key,
-        latitude,
-        longitude
-    )
-    data = {
-        'exclude': 'currently,minutely,hourly,alerts,flags',  # Exclude extra data we don't want/need
-        'units': 'si'
-    }
-    r = requests.get(url, params=data)
-    data = r.json()
-    if r.status_code != 200:
-        raise Exception(data['error'])
+    # DarkSky
+    if bot.config.weather.weather_provider == 'darksky':
+        return darksky_forecast(bot, latitude, longitude, location)
+    # OpenWeatherMap
+    elif bot.config.weather.weather_provider == 'openweathermap':
+        return openweathermap_forecast(bot, latitude, longitude, location)
+    # Unsupported Provider
     else:
-        forecast = ''
-        forecast += '{location}'.format(location=location)
-        for day in data['daily']['data'][0:4]:
-            dow = datetime.fromtimestamp(day['time']).strftime('%A')
-            summary = day['summary'].strip('.')
-            high_temp = get_temp(day['temperatureHigh'])
-            low_temp = get_temp(day['temperatureLow'])
-            forecast += ' :: {dow} - {summary} - {high_temp} / {low_temp}'.format(
-                dow=dow,
-                summary=summary,
-                high_temp=high_temp,
-                low_temp=low_temp
-            )
-        return forecast
+        raise Exception('Error: Unsupported Provider')
 
 
 def get_weather(bot, trigger):
@@ -206,37 +191,18 @@ def get_weather(bot, trigger):
     if not location:
         latitude = bot.db.get_nick_value(trigger.nick, 'latitude')
         longitude = bot.db.get_nick_value(trigger.nick, 'longitude')
-        location = bot.db.get_nick_value(trigger.nick, 'location')
-        if not latitude and not longitude:
-            return "I don't know where you live. " \
-                   "Give me a location, like {pfx}{command} London, " \
-                   "or tell me where you live by saying {pfx}setlocation " \
-                   "London, for example.".format(command=trigger.group(1),
-                                                 pfx=bot.config.core.help_prefix)
     else:
         latitude, longitude, location = get_geocoords(bot, trigger)
 
-    # Query DarkSky
-    url = 'https://api.darksky.net/forecast/{}/{},{}'.format(
-        bot.config.weather.weather_api_key,
-        latitude,
-        longitude
-    )
-    data = {
-        'exclude': 'minutely,hourly,daily,alerts,flags',  # Exclude extra data we don't want/need
-        'units': 'si'
-    }
-    r = requests.get(url, params=data)
-    data = r.json()
-    if r.status_code != 200:
-        return 'Error: {}'.format(data['error'])
+    # DarkSky
+    if bot.config.weather.weather_provider == 'darksky':
+        return darksky_weather(bot, latitude, longitude, location)
+    # OpenWeatherMap
+    elif bot.config.weather.weather_provider == 'openweathermap':
+        return openweathermap_weather(bot, latitude, longitude, location)
+    # Unsupported Provider
     else:
-        temp = get_temp(data['currently']['temperature'])
-        condition = data['currently']['summary']
-        humidity = get_humidity(data['currently']['humidity'])
-        wind = get_wind(data['currently']['windSpeed'], data['currently']['windBearing'])
-        uvindex = data['currently']['uvIndex']
-        return u'%s: %s, %s, %s, UV Index: %s, %s' % (location, temp, condition, humidity, uvindex, wind)
+        raise Exception('Error: Unsupported Provider')
 
 
 @commands('weather', 'wea')
@@ -250,7 +216,31 @@ def weather_command(bot, trigger):
         return bot.reply("Weather API key missing. Please configure this module.")
     if bot.config.weather.geocoords_api_key is None or bot.config.weather.geocoords_api_key == '':
         return bot.reply("GeoCoords API key missing. Please configure this module.")
-    return bot.say(get_weather(bot, trigger))
+
+    # Ensure we have a location for the user
+    location = trigger.group(2)
+    if not location:
+        latitude = bot.db.get_nick_value(trigger.nick, 'latitude')
+        longitude = bot.db.get_nick_value(trigger.nick, 'longitude')
+        if not latitude or not longitude:
+            return bot.say("I don't know where you live. "
+                           "Give me a location, like {pfx}{command} London, "
+                           "or tell me where you live by saying {pfx}setlocation "
+                           "London, for example.".format(command=trigger.group(1),
+                                                         pfx=bot.config.core.help_prefix))
+
+    data = get_weather(bot, trigger)
+    weather = u'{location}: {temp}, {condition}, {humidity}'.format(
+        location=data['location'],
+        temp=get_temp(data['temp']),
+        condition=data['condition'],
+        humidity=get_humidity(data['humidity'])
+    )
+    # Some providers don't give us UV Index
+    if 'uvindex' in data.keys():
+        weather += ', UV Index: {uvindex}'.format(uvindex=data['uvindex'])
+    weather += ', {wind}'.format(wind=get_wind(data['wind']['speed'], data['wind']['bearing']))
+    return bot.say(weather)
 
 
 @commands('forecast')
@@ -264,7 +254,16 @@ def forecast_command(bot, trigger):
         return bot.reply("Weather API key missing. Please configure this module.")
     if bot.config.weather.geocoords_api_key is None or bot.config.weather.geocoords_api_key == '':
         return bot.reply("GeoCoords API key missing. Please configure this module.")
-    return bot.say(get_forecast(bot, trigger))
+    data = get_forecast(bot, trigger)
+    forecast = '{location}'.format(location=data['location'])
+    for day in data['data']:
+        forecast += ' :: {dow} - {summary} - {high_temp} / {low_temp}'.format(
+            dow=day.get('dow'),
+            summary=day.get('summary'),
+            high_temp=get_temp(day.get('high_temp')),
+            low_temp=get_temp(day.get('low_temp'))
+        )
+    return bot.say(forecast)
 
 
 @commands('setlocation')
