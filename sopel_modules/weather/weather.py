@@ -172,6 +172,7 @@ def get_forecast(bot, trigger):
     if not location:
         latitude = bot.db.get_nick_value(trigger.nick, 'latitude')
         longitude = bot.db.get_nick_value(trigger.nick, 'longitude')
+        location = bot.db.get_nick_value(trigger.nick, 'location')
     else:
         latitude, longitude, location = get_geocoords(bot, trigger)
 
@@ -191,6 +192,7 @@ def get_weather(bot, trigger):
     if not location:
         latitude = bot.db.get_nick_value(trigger.nick, 'latitude')
         longitude = bot.db.get_nick_value(trigger.nick, 'longitude')
+        location = bot.db.get_nick_value(trigger.nick, 'location')
     else:
         latitude, longitude, location = get_geocoords(bot, trigger)
 
@@ -254,6 +256,19 @@ def forecast_command(bot, trigger):
         return bot.reply("Weather API key missing. Please configure this module.")
     if bot.config.weather.geocoords_api_key is None or bot.config.weather.geocoords_api_key == '':
         return bot.reply("GeoCoords API key missing. Please configure this module.")
+
+    # Ensure we have a location for the user
+    location = trigger.group(2)
+    if not location:
+        latitude = bot.db.get_nick_value(trigger.nick, 'latitude')
+        longitude = bot.db.get_nick_value(trigger.nick, 'longitude')
+        if not latitude or not longitude:
+            return bot.say("I don't know where you live. "
+                           "Give me a location, like {pfx}{command} London, "
+                           "or tell me where you live by saying {pfx}setlocation "
+                           "London, for example.".format(command=trigger.group(1),
+                                                         pfx=bot.config.core.help_prefix))
+
     data = get_forecast(bot, trigger)
     forecast = '{location}'.format(location=data['location'])
     for day in data['data']:
