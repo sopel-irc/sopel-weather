@@ -10,6 +10,44 @@ sopel-weather is an weather lookup module for Sopel.
 
 Since Yahoo deprecated their weather API on January 3, 2019, a reimplementation of the weather module was necessary 
 
+Installing
+==========
+
+If possible, use ``pip`` to install this plugin. Below are example commands; you
+might need to add ``sudo`` and/or call a different ``pip`` (e.g. ``pip3``) depending
+on your system and environment. Do not use ``setup.py install``; Sopel won't be
+able to load the plugin correctly.
+
+Published release
+~~~~~~~~~~~~~~~~~
+.. code-block::
+
+    pip install sopel-modules.weather
+
+From source
+~~~~~~~~~~~
+Clone the repo, then run this in /path/to/sopel-weather
+
+.. code-block::
+
+    pip install .
+
+Configuring
+===========
+You can automatically configure this plugin using the `sopel configure --plugins` command.
+
+However, if you want or need to configure this plugin manually, you will need to define the following in `~/.sopel/default.cfg`
+
+.. code-block::
+
+    [weather]
+    geocoords_provider = GEOCOORDS_PROVIDER
+    geocoords_api_key = GEOCOORDS_API_KEY
+    weather_provider = WEATHER_PROVIDER
+    weather_api_key = WEATHER_API_KEY
+
+
+
 Usage
 =====
 
@@ -56,6 +94,8 @@ Modern weather APIs require Latitude & Longitude as inputs to their APIs, so we 
 API Keys
 ~~~~~~~~
 
+GeoCoords
+*********
 LocationIQ
 
 
@@ -63,6 +103,8 @@ LocationIQ
 
     https://locationiq.com/
 
+Weather
+*******
 Dark Sky
 
 .. code-block::
