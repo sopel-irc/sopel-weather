@@ -6,9 +6,9 @@
 
 Introduction
 ============
-sopel-weather is an weather lookup module for Sopel.
+sopel-weather is a weather lookup plugin for Sopel.
 
-Since Yahoo deprecated their weather API on January 3, 2019, a reimplementation of the weather module was necessary 
+Since Yahoo deprecated their weather API on January 3, 2019, a reimplementation of the weather plugin was necessary 
 
 Installing
 ==========
@@ -97,7 +97,6 @@ API Keys
 GeoCoords
 *********
 LocationIQ
-
 
 .. code-block::
 
