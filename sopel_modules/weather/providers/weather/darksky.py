@@ -55,4 +55,9 @@ def darksky_weather(bot, latitude, longitude, location):
             'wind': {'speed': data['currently']['windSpeed'], 'bearing': data['currently']['windBearing']},
             'uvindex': data['currently']['uvIndex'],
         }
+
+        if bot.config.weather.sunrise_sunset:
+            weather_data['sunrise'] = data['currently']['sunriseTime']
+            weather_data['sunset'] = data['currently']['sunsetTime']
+
         return weather_data
