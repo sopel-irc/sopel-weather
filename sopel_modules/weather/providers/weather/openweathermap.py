@@ -54,4 +54,9 @@ def openweathermap_weather(bot, latitude, longitude, location):
             'humidity': float(data['current']['humidity'] / 100),  # Normalize this to decimal percentage
             'wind': {'speed': data['current']['wind_speed'], 'bearing': data['current']['wind_deg']},
         }
+
+        if bot.config.weather.sunrise_sunset is True or bot.config.weather.sunrise_sunset != '':
+            weather_data['sunrise'] = data['current']['sunrise']
+            weather_data['sunset'] = data['current']['sunset']
+
         return weather_data
