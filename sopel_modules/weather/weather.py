@@ -28,7 +28,7 @@ class WeatherSection(StaticSection):
     geocoords_api_key = ValidatedAttribute('geocoords_api_key', str, default='')
     weather_provider = ChoiceAttribute('weather_provider', WEATHER_PROVIDERS, default=NO_DEFAULT)
     weather_api_key = ValidatedAttribute('weather_api_key', str, default='')
-    sunrise_sunset = ValidatedAttribute('sunrise_sunset', str, default=False)
+    sunrise_sunset = ValidatedAttribute('sunrise_sunset', bool, default=False)
 
 
 def setup(bot):
@@ -248,7 +248,7 @@ def weather_command(bot, trigger):
     if 'uvindex' in data.keys():
         weather += ', UV Index: {uvindex}'.format(uvindex=data['uvindex'])
     # User wants sunrise/sunset information
-    if bot.config.weather.sunrise_sunset is None or bot.config.weather.sunrise_sunset == '':
+    if bot.config.weather.sunrise_sunset:
         weather += ', Sunrise: {sunrise} Sunset: {sunset}'.format(sunrise=data['sunrise'], sunset=data['sunset'])
     weather += ', {wind}'.format(wind=get_wind(data['wind']['speed'], data['wind']['bearing']))
     return bot.say(weather)
