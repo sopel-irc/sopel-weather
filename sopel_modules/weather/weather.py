@@ -150,22 +150,24 @@ def get_geocoords(bot, trigger):
     longitude = r.json()[0]['lon']
     address = r.json()[0]['address']
 
+    parts = []
+
     # Zip codes give us town versus city
-    if 'city' in address.keys():
-        location = '{}, {}, {}'.format(address['city'],
-                                       address['state'],
-                                       address['country_code'].upper())
-    elif 'town' in address.keys():
-        location = '{}, {}, {}'.format(address['town'],
-                                       address['state'],
-                                       address['country_code'].upper())
-    elif 'county' in address.keys():
-        location = '{}, {}, {}'.format(address['county'],
-                                       address['state'],
-                                       address['country_code'].upper())
-    elif 'city_district' in address.keys():
-        location = '{}, {}'.format(address['city_district'],
-                                   address['country_code'].upper())
+    if 'city' in address:
+        parts.append(address['city'])
+    elif 'town' in address:
+        parts.append(address['town'])
+    elif 'county' in address:
+        parts.append(address['county'])
+    elif 'city_district' in address:
+        parts.append(address['city_district'])
+
+    if 'state' in address:
+        parts.append(address['state'])
+
+    if parts:
+        parts.append(address['country_code'].upper())
+        location = ', '.join(parts)
     else:
         location = 'Unknown'
 
