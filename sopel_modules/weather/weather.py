@@ -12,6 +12,7 @@ from datetime import datetime
 from sopel.config.types import NO_DEFAULT, ChoiceAttribute, StaticSection, ValidatedAttribute
 from sopel.module import commands, example, NOLIMIT
 from sopel.modules.units import c_to_f
+from sopel.tools import Identifier
 
 from .providers.weather.darksky import darksky_forecast, darksky_weather
 from .providers.weather.openweathermap import openweathermap_forecast, openweathermap_weather
@@ -36,6 +37,7 @@ class WeatherSection(StaticSection):
     weather_provider = ChoiceAttribute('weather_provider', WEATHER_PROVIDERS, default=NO_DEFAULT)
     weather_api_key = ValidatedAttribute('weather_api_key', str, default='')
     sunrise_sunset = ValidatedAttribute('sunrise_sunset', bool, default=False)
+    nick_lookup = ValidatedAttribute('nick_lookup', bool, default=True)
 
 
 def setup(bot):
@@ -69,6 +71,11 @@ def configure(config):
         'sunrise_sunset',
         'Enable sunrise/sunset:',
         default=False
+    )
+    config.weather.configure_setting(
+        'nick_lookup',
+        'Enable looking up weather in a nick\'s location:',
+        default=True
     )
 
 
@@ -141,6 +148,28 @@ def get_wind(speed, bearing):
 
 
 def get_geocoords(bot, trigger):
+    target = trigger.group(2)
+    if not target:
+        latitude = bot.db.get_nick_value(trigger.nick, 'latitude')
+        longitude = bot.db.get_nick_value(trigger.nick, 'longitude')
+        location = bot.db.get_nick_value(trigger.nick, 'location')
+
+        if latitude and longitude and location:
+            return latitude, longitude, location
+        else:
+            raise ValueError
+
+    if bot.config.weather.nick_lookup and ' ' not in target:
+        # Try to look up nickname in DB, if enabled
+        nick = Identifier(target)
+        latitude = bot.db.get_nick_value(nick, 'latitude')
+        longitude = bot.db.get_nick_value(nick, 'longitude')
+        location = bot.db.get_nick_value(nick, 'location')
+
+        if latitude and longitude and location:
+            return latitude, longitude, location
+
+    # geocode location if not a nick or not found in DB
     url = GEOCOORDS_PROVIDERS[bot.config.weather.geocoords_provider]
     data = {
         'key': bot.config.weather.geocoords_api_key,
@@ -186,13 +215,11 @@ def get_geocoords(bot, trigger):
 
 # 24h Forecast: Oshkosh, US: Broken Clouds, High: 0°C (32°F), Low: -7°C (19°F)
 def get_forecast(bot, trigger):
-    location = trigger.group(2)
-    if not location:
-        latitude = bot.db.get_nick_value(trigger.nick, 'latitude')
-        longitude = bot.db.get_nick_value(trigger.nick, 'longitude')
-        location = bot.db.get_nick_value(trigger.nick, 'location')
-    else:
+    try:
         latitude, longitude, location = get_geocoords(bot, trigger)
+    except ValueError as e:
+        bot.reply(str(e))
+        return NOLIMIT
 
     # DarkSky
     if bot.config.weather.weather_provider == 'darksky':
@@ -206,13 +233,11 @@ def get_forecast(bot, trigger):
 
 
 def get_weather(bot, trigger):
-    location = trigger.group(2)
-    if not location:
-        latitude = bot.db.get_nick_value(trigger.nick, 'latitude')
-        longitude = bot.db.get_nick_value(trigger.nick, 'longitude')
-        location = bot.db.get_nick_value(trigger.nick, 'location')
-    else:
+    try:
         latitude, longitude, location = get_geocoords(bot, trigger)
+    except ValueError as e:
+        bot.reply(str(e))
+        return NOLIMIT
 
     # DarkSky
     if bot.config.weather.weather_provider == 'darksky':
