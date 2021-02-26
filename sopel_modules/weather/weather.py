@@ -296,7 +296,7 @@ def forecast_command(bot, trigger):
 @example('.setlocation 90210')
 @example('.setlocation w7174408')
 def update_location(bot, trigger):
-    """Set your location."""
+    """Set your location for fetching weather."""
     if bot.config.weather.geocoords_api_key is None or bot.config.weather.geocoords_api_key == '':
         return bot.reply("GeoCoords API key missing. Please configure this module.")
 
