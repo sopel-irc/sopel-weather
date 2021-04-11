@@ -15,7 +15,10 @@ def openweathermap_forecast(bot, latitude, longitude, location):
         'exclude': 'current,minutely,hourly',
         'units': 'metric'
     }
-    r = requests.get(url, params=params)
+    try:
+        r = requests.get(url, params=params)
+    except:
+        raise Exception("An Error Occurred. Check Logs For More Information.")
     data = r.json()
     if r.status_code != 200:
         raise Exception('Error: {}'.format(data['message']))
@@ -42,7 +45,10 @@ def openweathermap_weather(bot, latitude, longitude, location):
         'exclude': 'minutely,hourly,daily',
         'units': 'metric'
     }
-    r = requests.get(url, params=params)
+    try:
+        r = requests.get(url, params=params)
+    except:
+        raise Exception("An Error Occurred. Check Logs For More Information.")
     data = r.json()
     if r.status_code != 200:
         raise Exception('Error: {}'.format(data['message']))
