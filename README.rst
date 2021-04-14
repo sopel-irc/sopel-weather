@@ -125,8 +125,8 @@ Python Requirements
 
 .. |version| image:: https://img.shields.io/pypi/v/sopel-modules.weather.svg
    :target: https://pypi.python.org/pypi/sopel-modules.weather
-.. |build| image:: https://travis-ci.com/RustyBower/sopel-weather.svg?branch=master
-   :target: https://travis-ci.com/RustyBower/sopel-weather
+.. |build| image:: https://github.com/sopel-irc/sopel-weather/actions/workflows/python-tests.yml/badge.svg?branch=master
+   :target: https://github.com/sopel-irc/sopel-weather/actions/workflows/python-tests.yml
 .. |issues| image:: https://img.shields.io/github/issues/RustyBower/sopel-weather.svg
    :target: https://travis-ci.com/RustyBower/sopel-weather/issues
 .. |alerts| image:: https://img.shields.io/lgtm/alerts/g/RustyBower/sopel-weather.svg
