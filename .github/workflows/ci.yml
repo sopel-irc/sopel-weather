@@ -1,0 +1,31 @@
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.5', '3.6', '3.7', '3.8']
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Python ${{ matrix.python }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }} 
+      - name: Install packages
+        run: |
+          pip install git+https://github.com/sopel-irc/sopel.git
+          pip install -e .
+          pip install -r tests/requirements.txt
+      - name: Run tests
+        run: |
+          pycodestyle --show-source --ignore=E501,E402,E722  ./
+          coverage run -m py.test -v .
+          coverage report
+      - name: Run coveralls
+        run: |
+          coveralls
