@@ -15,7 +15,10 @@ def darksky_forecast(bot, latitude, longitude, location):
         'exclude': 'currently,minutely,hourly,alerts,flags',  # Exclude extra data we don't want/need
         'units': 'si'
     }
-    r = requests.get(url, params=params)
+    try:
+        r = requests.get(url, params=params)
+    except:
+        raise Exception("An Error Occurred. Check Logs For More Information.")
     data = r.json()
     if r.status_code != 200:
         raise Exception('Error: {}'.format(data['error']))
@@ -42,7 +45,10 @@ def darksky_weather(bot, latitude, longitude, location):
         'exclude': 'minutely,hourly,daily,alerts,flags',  # Exclude extra data we don't want/need
         'units': 'si'
     }
-    r = requests.get(url, params=params)
+    try:
+        r = requests.get(url, params=params)
+    except:
+        raise Exception("An Error Occurred. Check Logs For More Information.")
     data = r.json()
     if r.status_code != 200:
         raise Exception('Error: {}'.format(data['error']))

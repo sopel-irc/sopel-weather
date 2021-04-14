@@ -142,9 +142,12 @@ def get_geocoords(bot, trigger):
         'addressdetails': 1,
         'limit': 1
     }
-    r = requests.get(url, params=data)
-    if r.status_code != 200:
-        raise Exception(r.json()['error'])
+    try:
+        r = requests.get(url, params=data)
+        if r.status_code != 200:
+            raise Exception(r.json()['error'])
+    except:
+        raise Exception("An Error Occurred. Check Logs For More Information.")
 
     latitude = r.json()[0]['lat']
     longitude = r.json()[0]['lon']
@@ -296,6 +299,7 @@ def forecast_command(bot, trigger):
 @example('.setlocation 90210')
 @example('.setlocation w7174408')
 def update_location(bot, trigger):
+    """Set your location for fetching weather."""
     if bot.config.weather.geocoords_api_key is None or bot.config.weather.geocoords_api_key == '':
         return bot.reply("GeoCoords API key missing. Please configure this module.")
 
