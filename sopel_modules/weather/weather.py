@@ -178,12 +178,10 @@ def get_geocoords(bot, trigger):
         'addressdetails': 1,
         'limit': 1
     }
-    try:
-        r = requests.get(url, params=data)
-        if r.status_code != 200:
-            raise Exception(r.json()['error'])
-    except:
-        raise Exception("An Error Occurred. Check Logs For More Information.")
+
+    r = requests.get(url, params=data)
+    if r.status_code != 200:
+        raise Exception(r.json()['error'])
 
     latitude = r.json()[0]['lat']
     longitude = r.json()[0]['lon']
@@ -274,7 +272,12 @@ def weather_command(bot, trigger):
                            "London, for example.".format(command=trigger.group(1),
                                                          pfx=bot.config.core.help_prefix))
 
-    data = get_weather(bot, trigger)
+    try:
+        data = get_weather(bot, trigger)
+    except Exception as err:
+        bot.reply("Could not get weather: " + str(err))
+        return
+
     weather = u'{location}: {temp}, {condition}, {humidity}'.format(
         location=data['location'],
         temp=get_temp(data['temp']),
@@ -315,7 +318,12 @@ def forecast_command(bot, trigger):
                            "London, for example.".format(command=trigger.group(1),
                                                          pfx=bot.config.core.help_prefix))
 
-    data = get_forecast(bot, trigger)
+    try:
+        data = get_forecast(bot, trigger)
+    except Exception as err:
+        bot.reply("Could not get forecast: " + str(err))
+        return
+
     forecast = '{location}'.format(location=data['location'])
     for day in data['data']:
         forecast += ' :: {dow} - {summary} - {high_temp} / {low_temp}'.format(
@@ -343,7 +351,12 @@ def update_location(bot, trigger):
         return NOLIMIT
 
     # Get GeoCoords
-    latitude, longitude, location = get_geocoords(bot, trigger)
+    try:
+        latitude, longitude, location = get_geocoords(bot, trigger)
+    except Exception as err:
+        # Reply with the error message if geocoding fails
+        bot.reply("Could not find location details: " + str(err))
+        return
 
     # Assign Latitude & Longitude to user
     bot.db.set_nick_value(trigger.nick, 'latitude', latitude)
