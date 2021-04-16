@@ -21,10 +21,17 @@ WEATHER_PROVIDERS = [
     'openweathermap',
 ]
 
+GEOCOORDS_PROVIDERS = {
+    'locationiq_eu': 'https://eu1.locationiq.com/v1/search.php',
+    'locationiq_us': 'https://us1.locationiq.com/v1/search.php',
+    # for backward compatibility with previous `geocoords_provider` default value
+    'locationiq': 'https://us1.locationiq.com/v1/search.php',
+}
+
 
 # Define our sopel weather configuration
 class WeatherSection(StaticSection):
-    geocoords_provider = ValidatedAttribute('geocoords_provider', str, default='locationiq')
+    geocoords_provider = ChoiceAttribute('geocoords_provider', GEOCOORDS_PROVIDERS.keys(), default='locationiq_us')
     geocoords_api_key = ValidatedAttribute('geocoords_api_key', str, default='')
     weather_provider = ChoiceAttribute('weather_provider', WEATHER_PROVIDERS, default=NO_DEFAULT)
     weather_api_key = ValidatedAttribute('weather_api_key', str, default='')
@@ -134,7 +141,7 @@ def get_wind(speed, bearing):
 
 
 def get_geocoords(bot, trigger):
-    url = "https://us1.locationiq.com/v1/search.php"  # This can be updated to their EU endpoint for EU users
+    url = GEOCOORDS_PROVIDERS[bot.config.weather.geocoords_provider]
     data = {
         'key': bot.config.weather.geocoords_api_key,
         'q': trigger.group(2),
