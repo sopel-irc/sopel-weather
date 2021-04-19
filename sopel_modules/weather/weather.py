@@ -179,7 +179,13 @@ def get_geocoords(bot, trigger):
         'limit': 1
     }
 
-    r = requests.get(url, params=data)
+    try:
+        r = requests.get(url, params=data)
+    except requests.exceptions.RequestException:
+        # requests likes to include the full URL in its exceptions, which would
+        # mean the API key gets printed to the channel
+        raise Exception("Could not geocode location. See logs for details.")
+
     if r.status_code != 200:
         raise Exception(r.json()['error'])
 
