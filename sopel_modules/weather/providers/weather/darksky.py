@@ -60,6 +60,7 @@ def darksky_weather(bot, latitude, longitude, location):
             'humidity': data['currently']['humidity'],
             'wind': {'speed': data['currently']['windSpeed'], 'bearing': data['currently']['windBearing']},
             'uvindex': data['currently']['uvIndex'],
+            'timezone': data['timezone'],
         }
 
         if bot.config.weather.sunrise_sunset:

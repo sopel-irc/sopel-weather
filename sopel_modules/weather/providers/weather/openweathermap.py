@@ -59,6 +59,7 @@ def openweathermap_weather(bot, latitude, longitude, location):
             'condition': data['current']['weather'][0]['main'],
             'humidity': float(data['current']['humidity'] / 100),  # Normalize this to decimal percentage
             'wind': {'speed': data['current']['wind_speed'], 'bearing': data['current']['wind_deg']},
+            'timezone': data['timezone']
         }
 
         if bot.config.weather.sunrise_sunset:

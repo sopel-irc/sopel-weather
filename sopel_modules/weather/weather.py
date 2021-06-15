@@ -13,6 +13,7 @@ from sopel.config.types import NO_DEFAULT, ChoiceAttribute, StaticSection, Valid
 from sopel.module import commands, example, NOLIMIT
 from sopel.modules.units import c_to_f
 from sopel.tools import Identifier
+from sopel.tools.time import format_time
 
 from .providers.weather.darksky import darksky_forecast, darksky_weather
 from .providers.weather.openweathermap import openweathermap_forecast, openweathermap_weather
@@ -146,6 +147,10 @@ def get_wind(speed, bearing):
 
     return description + ' ' + str(m_s) + 'm/s (' + bearing + ')'
 
+def convert_timestamp(timestamp, tz):
+    time = datetime.fromtimestamp(timestamp)
+    # We only return the time, without a date or timezone.
+    return format_time(time = time, zone = tz)[13:18]
 
 def get_geocoords(bot, trigger):
     target = trigger.group(2)
@@ -295,7 +300,10 @@ def weather_command(bot, trigger):
         weather += ', UV Index: {uvindex}'.format(uvindex=data['uvindex'])
     # User wants sunrise/sunset information
     if bot.config.weather.sunrise_sunset:
-        weather += ', Sunrise: {sunrise} Sunset: {sunset}'.format(sunrise=data['sunrise'], sunset=data['sunset'])
+        tz = data['timezone']
+        sr = convert_timestamp(data['sunrise'], tz)
+        ss = convert_timestamp(data['sunset'], tz)
+        weather += ', Sunrise: {sunrise} Sunset: {sunset}'.format(sunrise=sr, sunset=ss)
     weather += ', {wind}'.format(wind=get_wind(data['wind']['speed'], data['wind']['bearing']))
     return bot.say(weather)
 
