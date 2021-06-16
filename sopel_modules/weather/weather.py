@@ -150,11 +150,9 @@ def get_wind(speed, bearing):
     return description + ' ' + str(m_s) + 'm/s (' + bearing + ')'
 
 def convert_timestamp(timestamp, tz):
-    time = datetime.utcfromtimestamp(timestamp)
+    # Partial logic from sopel/tools/time.format_time
+    time = datetime.fromtimestamp(timestamp, pytz.timezone('UTC'))
     # We only return the time, without a date or timezone.
-    # Taken from sopel/tools/time.format_time
-    utc = pytz.timezone('UTC')
-    time = utc.localize(time)
     tz = pytz.timezone(tz)
     return time.astimezone(tz).strftime('%H:%M')
 
