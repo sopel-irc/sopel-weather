@@ -148,7 +148,7 @@ def get_wind(speed, bearing):
     return description + ' ' + str(m_s) + 'm/s (' + bearing + ')'
 
 def convert_timestamp(timestamp, tz):
-    time = datetime.fromtimestamp(timestamp)
+    time = datetime.utcfromtimestamp(timestamp)
     # We only return the time, without a date or timezone.
     return format_time(time = time, zone = tz)[13:18]
 
