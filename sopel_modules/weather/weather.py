@@ -100,6 +100,8 @@ def get_humidity(humidity):
 
 def get_wind(speed, bearing):
     m_s = float(round(speed, 1))
+    kph = int(round(m_s * 3.6, 1))
+    mph = int(round(m_s * 2.236936, 0))
     speed = int(round(m_s * 1.94384, 0))
     bearing = int(bearing)
 
@@ -147,7 +149,7 @@ def get_wind(speed, bearing):
     elif (bearing > 292.5) and (bearing <= 337.5):
         bearing = u'\u2198'
 
-    return description + ' ' + str(m_s) + 'm/s (' + bearing + ')'
+    return description + ': ' + str(kph) + 'km/h ' + '(' + str(mph) + 'mph) ' + '(' + bearing + ')'
 
 def convert_timestamp(timestamp, tz):
     # Partial logic from sopel/tools/time.format_time
@@ -312,7 +314,7 @@ def weather_command(bot, trigger):
     return bot.say(weather)
 
 
-@commands('forecast')
+@commands('forecast', 'fc')
 @example('.forecast')
 @example('.forecast London')
 @example('.forecast Seattle, US')
