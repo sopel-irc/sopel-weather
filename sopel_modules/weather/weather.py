@@ -9,6 +9,8 @@ import requests
 
 from datetime import datetime
 
+import pytz
+
 from sopel.config.types import NO_DEFAULT, ChoiceAttribute, StaticSection, ValidatedAttribute
 from sopel.module import commands, example, NOLIMIT
 from sopel.modules.units import c_to_f
@@ -148,9 +150,11 @@ def get_wind(speed, bearing):
     return description + ' ' + str(m_s) + 'm/s (' + bearing + ')'
 
 def convert_timestamp(timestamp, tz):
-    time = datetime.utcfromtimestamp(timestamp)
+    # Partial logic from sopel/tools/time.format_time
+    time = datetime.fromtimestamp(timestamp, pytz.timezone('UTC'))
     # We only return the time, without a date or timezone.
-    return format_time(time = time, zone = tz)[13:18]
+    tz = pytz.timezone(tz)
+    return time.astimezone(tz).strftime('%H:%M')
 
 def get_geocoords(bot, trigger):
     target = trigger.group(2)
