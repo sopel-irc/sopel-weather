@@ -100,9 +100,9 @@ def get_humidity(humidity):
 
 def get_wind(speed, bearing):
     m_s = float(round(speed, 1))
-    kph = int(round(m_s * 3.6, 1))
-    mph = int(round(m_s * 2.236936, 0))
-    speed = int(round(m_s * 1.94384, 0))
+    kph = int(round(speed * 3.6))
+    mph = int(round(speed * 2.236936))
+    speed = int(round(m_s * 1.94384))
     bearing = int(bearing)
 
     if speed < 1:
