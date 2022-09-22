@@ -228,7 +228,7 @@ def get_geocoords(bot, trigger):
     return latitude, longitude, location
 
 
-# 24h Forecast: Oshkosh, US: Broken Clouds, High: 0°C (32°F), Low: -7°C (19°F)
+
 def get_forecast(bot, trigger):
     try:
         latitude, longitude, location = get_geocoords(bot, trigger)
@@ -320,7 +320,7 @@ def weather_command(bot, trigger):
 @example('.forecast Seattle, US')
 @example('.forecast 90210')
 def forecast_command(bot, trigger):
-    """.forecast location - Show the weather forecast for tomorrow at the given location."""
+    """.forecast location - Show the weather forecast for today and the next three days at the given location."""
     if bot.config.weather.weather_api_key is None or bot.config.weather.weather_api_key == '':
         return bot.reply("Weather API key missing. Please configure this module.")
     if bot.config.weather.geocoords_api_key is None or bot.config.weather.geocoords_api_key == '':
