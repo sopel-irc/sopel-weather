@@ -104,12 +104,6 @@ LocationIQ
 
 Weather
 *******
-Dark Sky (Deprecated 03/31/2023)
-
-.. code-block::
-
-    https://darksky.net/
-
 Open-Meteo
 
 Does not require an API key; use any string you want.
