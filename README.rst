@@ -110,6 +110,14 @@ Dark Sky
 
     https://darksky.net/
 
+Open-Meteo
+
+Does not require an API key; use any string you want.
+
+.. code-block::
+
+    https://open-meteo.com/
+
 OpenWeatherMap
 
 .. code-block::
