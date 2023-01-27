@@ -127,11 +127,11 @@ Python Requirements
    :target: https://pypi.python.org/pypi/sopel-modules.weather
 .. |build| image:: https://github.com/sopel-irc/sopel-weather/actions/workflows/python-tests.yml/badge.svg?branch=master
    :target: https://github.com/sopel-irc/sopel-weather/actions/workflows/python-tests.yml
-.. |issues| image:: https://img.shields.io/github/issues/RustyBower/sopel-weather.svg
-   :target: https://travis-ci.com/RustyBower/sopel-weather/issues
-.. |alerts| image:: https://img.shields.io/lgtm/alerts/g/RustyBower/sopel-weather.svg
-   :target: https://lgtm.com/projects/g/RustyBower/sopel-weather/alerts/
-.. |coverage-status| image:: https://coveralls.io/repos/github/RustyBower/sopel-weather/badge.svg?branch=master
-   :target: https://coveralls.io/github/RustyBower/sopel-weather?branch=master
+.. |issues| image:: https://img.shields.io/github/issues/sopel-irc/sopel-weather.svg
+   :target: https://travis-ci.com/sopel-irc/sopel-weather/issues
+.. |alerts| image:: https://img.shields.io/lgtm/alerts/g/sopel-irc/sopel-weather.svg
+   :target: https://lgtm.com/projects/g/sopel-irc/sopel-weather/alerts/
+.. |coverage-status| image:: https://coveralls.io/repos/github/sopel-irc/sopel-weather/badge.svg?branch=master
+   :target: https://coveralls.io/github/sopel-irc/sopel-weather?branch=master
 .. |license| image:: https://img.shields.io/pypi/l/sopel-modules.weather.svg
-   :target: https://github.com/RustyBower/sopel-modules.weather/blob/master/COPYING
+   :target: https://github.com/sopel-irc/sopel-modules.weather/blob/master/COPYING
