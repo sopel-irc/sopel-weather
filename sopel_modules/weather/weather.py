@@ -17,11 +17,9 @@ from sopel.modules.units import c_to_f
 from sopel.tools import Identifier
 from sopel.tools.time import format_time
 
-from .providers.weather.darksky import darksky_forecast, darksky_weather
 from .providers.weather.openweathermap import openweathermap_forecast, openweathermap_weather
 
 WEATHER_PROVIDERS = [
-    'darksky',
     'openweathermap',
 ]
 
@@ -235,9 +233,6 @@ def get_forecast(bot, trigger):
         bot.reply(str(e))
         return NOLIMIT
 
-    # DarkSky
-    if bot.config.weather.weather_provider == 'darksky':
-        return darksky_forecast(bot, latitude, longitude, location)
     # OpenWeatherMap
     elif bot.config.weather.weather_provider == 'openweathermap':
         return openweathermap_forecast(bot, latitude, longitude, location)
@@ -253,9 +248,6 @@ def get_weather(bot, trigger):
         bot.reply(str(e))
         return NOLIMIT
 
-    # DarkSky
-    if bot.config.weather.weather_provider == 'darksky':
-        return darksky_weather(bot, latitude, longitude, location)
     # OpenWeatherMap
     elif bot.config.weather.weather_provider == 'openweathermap':
         return openweathermap_weather(bot, latitude, longitude, location)

@@ -104,12 +104,6 @@ LocationIQ
 
 Weather
 *******
-Dark Sky
-
-.. code-block::
-
-    https://darksky.net/
-
 OpenWeatherMap
 
 .. code-block::
