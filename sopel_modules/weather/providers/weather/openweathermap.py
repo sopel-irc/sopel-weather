@@ -4,19 +4,19 @@ import requests
 from datetime import datetime
 
 
-def openweathermap_forecast(bot, latitude, longitude, location):
-    url = 'https://api.openweathermap.org/data/2.5/onecall?appid={}&lat={}&lon={}'.format(
-        bot.config.weather.weather_api_key,
-        latitude,
-        longitude
-    )
+API_ENDPOINT = 'https://api.openweathermap.org/data/2.5/onecall'
 
+
+def openweathermap_forecast(bot, latitude, longitude, location):
     params = {
+        'appid': bot.config.weather.weather_api_key,
+        'lat': latitude,
+        'lon': longitude,
         'exclude': 'current,minutely,hourly',
         'units': 'metric'
     }
     try:
-        r = requests.get(url, params=params)
+        r = requests.get(API_ENDPOINT, params=params)
     except:
         raise Exception("An Error Occurred. Check Logs For More Information.")
     data = r.json()
@@ -35,18 +35,15 @@ def openweathermap_forecast(bot, latitude, longitude, location):
 
 
 def openweathermap_weather(bot, latitude, longitude, location):
-    url = 'https://api.openweathermap.org/data/2.5/onecall?appid={}&lat={}&lon={}'.format(
-        bot.config.weather.weather_api_key,
-        latitude,
-        longitude
-    )
-
     params = {
-        'exclude': 'minutely,hourly,daily',
+        'appid': bot.config.weather.weather_api_key,
+        'lat': latitude,
+        'lon': longitude,
+        'exclude': 'current,minutely,hourly',
         'units': 'metric'
     }
     try:
-        r = requests.get(url, params=params)
+        r = requests.get(API_ENDPOINT, params=params)
     except:
         raise Exception("An Error Occurred. Check Logs For More Information.")
     data = r.json()
