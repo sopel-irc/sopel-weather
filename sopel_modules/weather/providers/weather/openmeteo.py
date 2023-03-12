@@ -45,11 +45,7 @@ def openmeteo_forecast(bot, latitude, longitude, location):
     params = {
         'latitude': latitude,
         'longitude': longitude,
-        'daily': [
-            'temperature_2m_min',
-            'temperature_2m_max',
-            'weathercode',
-        ],
+        'daily': 'temperature_2m_min,temperature_2m_max,weathercode',
         'timeformat': 'unixtime',
         'timezone': 'auto',
     }
@@ -86,7 +82,7 @@ def openmeteo_weather(bot, latitude, longitude, location):
         'current_weather': 1,
         'windspeed_unit': 'ms',
         'hourly': 'relativehumidity_2m',
-        'daily': ['sunrise', 'sunset'],
+        'daily': 'sunrise,sunset',
         'timeformat': 'unixtime',
         'timezone': 'auto',
     }
