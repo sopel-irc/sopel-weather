@@ -124,6 +124,14 @@ OpenWeatherMap
 
     https://openweathermap.org/
 
+Pirate Weather
+
+A drop-in replacement API for the old Dark Sky service bought by Apple.
+
+.. code-block::
+
+    https://pirateweather.net/
+
 Python Requirements
 ~~~~~~~~~~~~~~~~~~~
 .. code-block::
