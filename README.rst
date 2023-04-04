@@ -104,7 +104,7 @@ LocationIQ
 
 Weather
 *******
-Dark Sky
+Dark Sky (Deprecated 03/31/2023)
 
 .. code-block::
 
