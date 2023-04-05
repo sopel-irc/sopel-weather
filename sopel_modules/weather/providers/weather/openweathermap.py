@@ -39,7 +39,7 @@ def openweathermap_weather(bot, latitude, longitude, location):
         'appid': bot.config.weather.weather_api_key,
         'lat': latitude,
         'lon': longitude,
-        'exclude': 'current,minutely,hourly',
+        'exclude': 'minutely,hourly',
         'units': 'metric'
     }
     try:
