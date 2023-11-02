@@ -12,7 +12,7 @@ from datetime import datetime
 import pytz
 
 from sopel.config.types import NO_DEFAULT, ChoiceAttribute, StaticSection, ValidatedAttribute
-from sopel.module import commands, example, NOLIMIT
+from sopel.plugin import commands, example, NOLIMIT
 from sopel.modules.units import c_to_f
 from sopel.tools import Identifier
 from sopel.tools.time import format_time
