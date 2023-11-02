@@ -13,7 +13,6 @@ import pytz
 
 from sopel.config.types import NO_DEFAULT, ChoiceAttribute, StaticSection, ValidatedAttribute
 from sopel.plugin import commands, example, NOLIMIT
-from sopel.modules.units import c_to_f
 from sopel.tools import Identifier
 from sopel.tools.time import format_time
 
@@ -90,7 +89,7 @@ def get_temp(temp):
         temp = float(temp)
     except (KeyError, TypeError, ValueError):
         return 'unknown'
-    return u'%d\u00B0C (%d\u00B0F)' % (round(temp), round(c_to_f(temp)))
+    return u'%d\u00B0C (%d\u00B0F)' % (round(temp), round(1.8 * temp + 32))
 
 
 def get_humidity(humidity):
