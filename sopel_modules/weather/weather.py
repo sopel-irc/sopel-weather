@@ -272,7 +272,7 @@ def get_weather(bot, trigger):
         raise Exception('Error: Unsupported Provider')
 
 
-@commands('weather', 'wea')
+@commands('weather', 'wea', 'we', 'w')
 @example('.weather')
 @example('.weather London')
 @example('.weather Seattle, US')
