@@ -11,7 +11,7 @@ from datetime import datetime
 
 import pytz
 
-from sopel.config.types import NO_DEFAULT, ChoiceAttribute, StaticSection, ValidatedAttribute
+from sopel.config.types import NO_DEFAULT, BooleanAttribute, ChoiceAttribute, StaticSection, ValidatedAttribute
 from sopel.plugin import commands, example, NOLIMIT
 from sopel.tools import Identifier
 from sopel.tools.time import format_time
@@ -42,8 +42,8 @@ class WeatherSection(StaticSection):
     geocoords_api_key = ValidatedAttribute('geocoords_api_key', str, default='')
     weather_provider = ChoiceAttribute('weather_provider', WEATHER_PROVIDERS, default=NO_DEFAULT)
     weather_api_key = ValidatedAttribute('weather_api_key', str, default='')
-    sunrise_sunset = ValidatedAttribute('sunrise_sunset', bool, default=False)
-    nick_lookup = ValidatedAttribute('nick_lookup', bool, default=True)
+    sunrise_sunset = BooleanAttribute('sunrise_sunset', default=False)
+    nick_lookup = BooleanAttribute('nick_lookup', default=True)
 
 
 def setup(bot):
