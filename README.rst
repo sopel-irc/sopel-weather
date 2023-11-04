@@ -22,7 +22,7 @@ Published release
 ~~~~~~~~~~~~~~~~~
 .. code-block::
 
-    pip install sopel-modules.weather
+    pip install sopel-weather
 
 From source
 ~~~~~~~~~~~
@@ -45,7 +45,6 @@ However, if you want or need to configure this plugin manually, you will need to
     geocoords_api_key = GEOCOORDS_API_KEY
     weather_provider = WEATHER_PROVIDER
     weather_api_key = WEATHER_API_KEY
-
 
 
 Usage
@@ -130,11 +129,12 @@ Python Requirements
 ~~~~~~~~~~~~~~~~~~~
 .. code-block::
 
+    pytz
     requests
     sopel
 
-.. |version| image:: https://img.shields.io/pypi/v/sopel-modules.weather.svg
-   :target: https://pypi.python.org/pypi/sopel-modules.weather
+.. |version| image:: https://img.shields.io/pypi/v/sopel-weather.svg
+   :target: https://pypi.python.org/pypi/sopel-weather
 .. |build| image:: https://github.com/sopel-irc/sopel-weather/actions/workflows/python-tests.yml/badge.svg?branch=master
    :target: https://github.com/sopel-irc/sopel-weather/actions/workflows/python-tests.yml
 .. |issues| image:: https://img.shields.io/github/issues/sopel-irc/sopel-weather.svg
@@ -143,5 +143,5 @@ Python Requirements
    :target: https://lgtm.com/projects/g/sopel-irc/sopel-weather/alerts/
 .. |coverage-status| image:: https://coveralls.io/repos/github/sopel-irc/sopel-weather/badge.svg?branch=master
    :target: https://coveralls.io/github/sopel-irc/sopel-weather?branch=master
-.. |license| image:: https://img.shields.io/pypi/l/sopel-modules.weather.svg
-   :target: https://github.com/sopel-irc/sopel-modules.weather/blob/master/COPYING
+.. |license| image:: https://img.shields.io/pypi/l/sopel-weather.svg
+   :target: https://github.com/sopel-irc/sopel-weather/blob/master/LICENSE

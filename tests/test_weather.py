@@ -11,7 +11,7 @@ from sopel.test_tools import MockSopel, MockSopelWrapper
 from sopel.tools import Identifier
 from sopel import module
 
-from sopel_modules.weather import weather
+import sopel_weather as weather
 
 
 @pytest.fixture
