@@ -79,10 +79,10 @@ def openmeteo_weather(bot, latitude, longitude, location):
     params = {
         'latitude': latitude,
         'longitude': longitude,
-        'current_weather': 1,
-        'windspeed_unit': 'ms',
-        'hourly': 'relativehumidity_2m',
+        'current': 'temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m',
+        'wind_speed_unit': 'ms',
         'daily': 'sunrise,sunset',
+        'forecast_days': 1,
         'timeformat': 'unixtime',
         'timezone': 'auto',
     }
@@ -96,20 +96,17 @@ def openmeteo_weather(bot, latitude, longitude, location):
     if r.status_code != 200 or data.get('error') == 'true':
         raise Exception('Error: {}'.format(data['reason']))
 
-    condition = data['current_weather']['weathercode']
+    condition = data['current']['weather_code']
     condition = WEATHERCODE_MAP.get(condition, 'WMO code {}'.format(condition))
-
-    current_time_index = data['hourly']['time'].index(data['current_weather']['time'])
-    humidity = data['hourly']['relativehumidity_2m'][current_time_index]
 
     weather_data = {
         'location': location,
-        'temp': data['current_weather']['temperature'],
+        'temp': data['current']['temperature_2m'],
         'condition': condition,
-        'humidity': float(humidity / 100),  # Normalize to decimal percentage
+        'humidity': data['current']['relative_humidity_2m'] / 100.0,  # normalize to decimal percentage
         'wind': {
-            'speed': data['current_weather']['windspeed'],
-            'bearing': data['current_weather']['winddirection'],
+            'speed': data['current']['wind_speed_10m'],
+            'bearing': data['current']['wind_direction_10m'],
         },
         'timezone': data['timezone'],
     }
