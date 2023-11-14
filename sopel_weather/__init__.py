@@ -1,4 +1,8 @@
 # coding=utf-8
+"""sopel-weather
+
+A working re-implementation of the weather plugin for Sopel
+"""
 # Copyright 2008, Sean B. Palmer, inamidst.com
 # Copyright 2012, Elsie Powell, embolalia.com
 # Copyright 2018, Rusty Bower, rustybower.com

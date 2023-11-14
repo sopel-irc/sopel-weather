@@ -1,3 +1,0 @@
-requests
-sopel>=7.1
-pytz

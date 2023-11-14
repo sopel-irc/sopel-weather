@@ -1,7 +1,6 @@
 include NEWS
-include COPYING
-include README.md
-include *requirements.txt
+include README.rst
+include LICENSE
 
 recursive-include tests *
 recursive-exclude * __pycache__
