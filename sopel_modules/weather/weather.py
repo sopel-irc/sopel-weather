@@ -13,7 +13,7 @@ import pytz
 
 from sopel.config.types import NO_DEFAULT, BooleanAttribute, ChoiceAttribute, StaticSection, ValidatedAttribute
 from sopel.plugin import commands, example, NOLIMIT
-from sopel.tools import Identifier
+from sopel.tools import get_logger, Identifier
 from sopel.tools.time import format_time
 
 from .providers.weather.openmeteo import openmeteo_forecast, openmeteo_weather
@@ -33,6 +33,8 @@ GEOCOORDS_PROVIDERS = {
     # for backward compatibility with previous `geocoords_provider` default value
     'locationiq': 'https://us1.locationiq.com/v1/search.php',
 }
+
+LOGGER = get_logger('weather')
 
 
 # Define our sopel weather configuration
@@ -300,6 +302,7 @@ def weather_command(bot, trigger):
         data = get_weather(bot, trigger)
     except Exception as err:
         bot.reply("Could not get weather: " + str(err))
+        LOGGER.debug('Error in weather provider.', exc_info=err)
         return
 
     weather = u'{location}: {temp}, {condition}, {humidity}'.format(
