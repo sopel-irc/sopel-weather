@@ -14,7 +14,6 @@ import pytz
 from sopel.config.types import NO_DEFAULT, BooleanAttribute, ChoiceAttribute, StaticSection, ValidatedAttribute
 from sopel.plugin import commands, example, NOLIMIT
 from sopel.tools import Identifier
-from sopel.tools.time import format_time
 
 from .providers.weather.openmeteo import openmeteo_forecast, openmeteo_weather
 from .providers.weather.openweathermap import openweathermap_forecast, openweathermap_weather
