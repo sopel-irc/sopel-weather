@@ -52,7 +52,7 @@ def openmeteo_forecast(bot, latitude, longitude, location):
 
     try:
         r = requests.get(API_ENDPOINT, params=params)
-    except:
+    except Exception:
         raise Exception("An Error Occurred. Check Logs For More Information.")
 
     data = r.json()
@@ -89,7 +89,7 @@ def openmeteo_weather(bot, latitude, longitude, location):
 
     try:
         r = requests.get(API_ENDPOINT, params=params)
-    except:
+    except Exception:
         raise Exception("An Error Occurred. Check Logs For More Information.")
 
     data = r.json()

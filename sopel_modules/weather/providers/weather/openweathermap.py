@@ -17,7 +17,7 @@ def openweathermap_forecast(bot, latitude, longitude, location):
     }
     try:
         r = requests.get(API_ENDPOINT, params=params)
-    except:
+    except Exception:
         raise Exception("An Error Occurred. Check Logs For More Information.")
     data = r.json()
     if r.status_code != 200:
@@ -44,7 +44,7 @@ def openweathermap_weather(bot, latitude, longitude, location):
     }
     try:
         r = requests.get(API_ENDPOINT, params=params)
-    except:
+    except Exception:
         raise Exception("An Error Occurred. Check Logs For More Information.")
     data = r.json()
     if r.status_code != 200:
