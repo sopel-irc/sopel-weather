@@ -9,9 +9,9 @@ import sopel.tools.target
 from sopel.trigger import PreTrigger, Trigger
 from sopel.test_tools import MockSopel, MockSopelWrapper
 from sopel.tools import Identifier
-from sopel import module
+from sopel import plugin
 
-from sopel_modules.weather import weather
+import sopel_weather as weather
 
 
 @pytest.fixture
@@ -26,7 +26,7 @@ def bot(sopel, pretrigger):
     bot = MockSopelWrapper(sopel, pretrigger)
     bot.privileges = dict()
     bot.privileges[Identifier('#Sopel')] = dict()
-    bot.privileges[Identifier('#Sopel')][Identifier('Foo')] = module.VOICE
+    bot.privileges[Identifier('#Sopel')][Identifier('Foo')] = plugin.VOICE
     return bot
 
 
@@ -125,8 +125,8 @@ def forecast_results():
 
 
 def test_forecast_command(bot, trigger):
-    @module.commands('forecast')
-    @module.example('.forecast', 'True')
+    @plugin.commands('forecast')
+    @plugin.example('.forecast', 'True')
     def mock(bot, trigger, match=None):
         return True
 
@@ -134,8 +134,8 @@ def test_forecast_command(bot, trigger):
 
 
 def test_wea_command(bot, trigger):
-    @module.commands('wea')
-    @module.example('.wea', 'True')
+    @plugin.commands('wea')
+    @plugin.example('.wea', 'True')
     def mock(bot, trigger, match=None):
         return True
 
@@ -143,8 +143,8 @@ def test_wea_command(bot, trigger):
 
 
 def test_weather_command(bot, trigger):
-    @module.commands('weather')
-    @module.example('.weather', 'True')
+    @plugin.commands('weather')
+    @plugin.example('.weather', 'True')
     def mock(bot, trigger, match=None):
         return True
 
