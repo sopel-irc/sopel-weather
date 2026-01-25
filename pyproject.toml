@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["sopel_weather", "sopel_weather.*"]
+namespaces = false
+
+[project]
+name = "sopel-weather"
+version = "2.0.0"
+description = "A weather lookup plugin for Sopel IRC bots"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.8"
+authors = [
+    { name = "Rusty Bower", email = "rusty@rustybower.com" },
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Communications :: Chat :: Internet Relay Chat",
+]
+dependencies = [
+    "sopel>=8.0",
+    "requests",
+    "pytz",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/sopel-irc/sopel-weather"
+"Bug Tracker" = "https://github.com/sopel-irc/sopel-weather/issues"
+
+[project.entry-points."sopel.plugins"]
+weather = "sopel_weather"
