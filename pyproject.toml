@@ -11,7 +11,7 @@ name = "sopel-weather"
 version = "2.0.0"
 description = "A weather lookup plugin for Sopel IRC bots"
 readme = "README.md"
-license = "MIT"
+license = {text = "MIT"}
 requires-python = ">=3.8"
 authors = [
     { name = "Rusty Bower", email = "rusty@rustybower.com" },
