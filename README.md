@@ -199,4 +199,4 @@ UV Index is only available with Tomorrow.io, Pirate Weather, and OpenWeatherMap 
 
 ## License
 
-Eiffel Forum License 2
+MIT License
