@@ -1,371 +1,421 @@
 # coding=utf-8
-"""Tests for message formatting"""
+"""Tests for sopel-weather"""
 from __future__ import unicode_literals, absolute_import, print_function, division
 
 import pytest
 import requests_mock
-import sopel.tools.target
-
-from sopel.trigger import PreTrigger, Trigger
-from sopel.test_tools import MockSopel, MockSopelWrapper
-from sopel.tools import Identifier
-from sopel import plugin
 
 import sopel_weather as weather
+from sopel_weather.providers.weather.openmeteo import openmeteo_forecast, openmeteo_weather
+from sopel_weather.providers.weather.pirateweather import pirateweather_forecast, pirateweather_weather
+from sopel_weather.providers.weather.tomorrow import tomorrow_forecast, tomorrow_weather
 
 
-@pytest.fixture
-def sopel():
-    bot = MockSopel('Sopel')
-    bot.config.core.owner = 'Bar'
-    return bot
+# =============================================================================
+# Helper Functions Tests
+# =============================================================================
+
+def test_get_temp():
+    """Test temperature formatting."""
+    assert weather.get_temp('') == 'unknown'
+    assert weather.get_temp(None) == 'unknown'
+    assert weather.get_temp(0) == '0°C (32°F)'
+    assert weather.get_temp(20) == '20°C (68°F)'
+    assert weather.get_temp(-10) == '-10°C (14°F)'
 
 
-@pytest.fixture
-def bot(sopel, pretrigger):
-    bot = MockSopelWrapper(sopel, pretrigger)
-    bot.privileges = dict()
-    bot.privileges[Identifier('#Sopel')] = dict()
-    bot.privileges[Identifier('#Sopel')][Identifier('Foo')] = plugin.VOICE
-    return bot
+def test_get_humidity():
+    """Test humidity formatting."""
+    assert weather.get_humidity('') == 'unknown'
+    assert weather.get_humidity(None) == 'unknown'
+    assert weather.get_humidity(0.5) == 'Humidity: 50%'
+    assert weather.get_humidity(1.0) == 'Humidity: 100%'
+    assert weather.get_humidity(0.75) == 'Humidity: 75%'
 
 
-@pytest.fixture
-def pretrigger():
-    line = ':Foo!foo@example.com PRIVMSG #sopel :.weather 90210'
-    return PreTrigger(Identifier('Foo'), line)
+def test_get_wind():
+    """Test wind formatting."""
+    # Test wind descriptions at different speeds (using Beaufort scale in knots)
+    # The get_wind function converts m/s to knots internally
+    assert 'Calm' in weather.get_wind(0.1, 0)      # < 1 knot
+    assert 'Light air' in weather.get_wind(1.0, 45)    # 1-3 knots
+    assert 'Light breeze' in weather.get_wind(2.5, 90)  # 4-6 knots
+    assert 'Gentle breeze' in weather.get_wind(4.0, 135)  # 7-10 knots
+    assert 'Moderate breeze' in weather.get_wind(6.5, 180)  # 11-15 knots
+    assert 'Fresh breeze' in weather.get_wind(9.5, 225)  # 16-21 knots
+    assert 'Strong breeze' in weather.get_wind(12.5, 270)  # 22-27 knots
+    assert 'Near gale' in weather.get_wind(16.0, 315)  # 28-33 knots
+    assert 'Gale' in weather.get_wind(19.5, 0)  # 34-40 knots
+    assert 'Strong gale' in weather.get_wind(23.0, 45)  # 41-47 knots
+    assert 'Storm' in weather.get_wind(27.0, 90)  # 48-55 knots
+    assert 'Violent storm' in weather.get_wind(31.0, 135)  # 56-63 knots
+    assert 'Hurricane' in weather.get_wind(35.0, 180)  # 64+ knots
+
+    # Test wind direction arrows
+    assert '↓' in weather.get_wind(5.0, 0)      # North wind
+    assert '↙' in weather.get_wind(5.0, 45)    # NE wind
+    assert '←' in weather.get_wind(5.0, 90)    # East wind
+    assert '↖' in weather.get_wind(5.0, 135)   # SE wind
+    assert '↑' in weather.get_wind(5.0, 180)   # South wind
+    assert '↗' in weather.get_wind(5.0, 225)   # SW wind
+    assert '→' in weather.get_wind(5.0, 270)   # West wind
+    assert '↘' in weather.get_wind(5.0, 315)   # NW wind
 
 
-@pytest.fixture
-def trigger(bot, pretrigger):
-    return Trigger(bot.config, pretrigger, None)
+# =============================================================================
+# Mock Bot for Provider Tests
+# =============================================================================
+
+class MockBot:
+    """Mock bot for testing providers."""
+    class Config:
+        class Weather:
+            weather_api_key = 'test-api-key'
+            sunrise_sunset = False
+        weather = Weather()
+    config = Config()
 
 
-@pytest.fixture
-def weather_results():
+class MockBotWithSunrise:
+    """Mock bot with sunrise_sunset enabled."""
+    class Config:
+        class Weather:
+            weather_api_key = 'test-api-key'
+            sunrise_sunset = True
+        weather = Weather()
+    config = Config()
+
+
+# =============================================================================
+# Open-Meteo Provider Tests
+# =============================================================================
+
+def test_openmeteo_weather():
+    """Test Open-Meteo weather provider."""
+    mock_response = {
+        "latitude": 47.6,
+        "longitude": -122.33,
+        "timezone": "America/Los_Angeles",
+        "current": {
+            "temperature_2m": 12.5,
+            "relative_humidity_2m": 75,
+            "precipitation": 0,
+            "weather_code": 2,
+            "wind_speed_10m": 5.2,
+            "wind_direction_10m": 180
+        },
+        "daily": {
+            "sunrise": [1704722400],
+            "sunset": [1704756000]
+        }
+    }
+
     with requests_mock.mock() as m:
-        m.get('https://api.openweathermap.org/data/2.5/weather?id=5400075&appid=123456&units=metric',
-              json={"coord": {"lon": -122.04, "lat": 37.37},
-                    "weather": [{"id": 800, "main": "Clear", "description": "clear sky", "icon": "01n"}],
-                    "base": "stations",
-                    "main": {"temp": 55.17, "pressure": 1014, "humidity": 79, "temp_min": 55.04,
-                             "temp_max": 55.4}, "visibility": 16093,
-                    "wind": {"speed": 11.41, "deg": 260, "gust": 8.2}, "clouds": {"all": 1}, "dt": 1546848000,
-                    "sys": {"type": 1, "id": 5122, "message": 0.0191, "country": "US", "sunrise": 1546874568,
-                            "sunset": 1546909596}, "id": 5400075, "name": "Sunnyvale", "cod": 200},
-              status_code=200)
-        return weather.search('weather', 'w5400075', '123456')
+        m.get('https://api.open-meteo.com/v1/forecast', json=mock_response)
+        result = openmeteo_weather(MockBot(), '47.6', '-122.33', 'Seattle, WA, US')
+
+        assert result['location'] == 'Seattle, WA, US'
+        assert result['temp'] == 12.5
+        assert result['condition'] == 'Partly cloudy'
+        assert result['humidity'] == 0.75
+        assert result['wind']['speed'] == 5.2
+        assert result['wind']['bearing'] == 180
+        assert result['timezone'] == 'America/Los_Angeles'
 
 
-@pytest.fixture
-def weather_results_utf8():
+def test_openmeteo_forecast():
+    """Test Open-Meteo forecast provider."""
+    mock_response = {
+        "latitude": 47.6,
+        "longitude": -122.33,
+        "timezone": "America/Los_Angeles",
+        "daily": {
+            "time": [1704672000, 1704758400, 1704844800, 1704931200],
+            "temperature_2m_min": [5.0, 6.0, 4.5, 7.0],
+            "temperature_2m_max": [12.0, 14.0, 11.5, 15.0],
+            "weathercode": [2, 61, 3, 0]
+        }
+    }
+
     with requests_mock.mock() as m:
-        m.get('https://api.openweathermap.org/data/2.5/weather?id=655977&appid=123456&units=metric',
-              json={"coord": {"lon": 25.08, "lat": 60.47},
-                    "weather": [{"id": 800, "main": "Clear", "description": "clear sky", "icon": "01d"}],
-                    "base": "stations",
-                    "main": {"temp": 10.85, "pressure": 1022, "humidity": 29, "temp_min": 10.56, "temp_max": 11.67},
-                    "visibility": 10000, "wind": {"speed": 6.7, "deg": 160}, "clouds": {"all": 0}, "dt": 1554295687,
-                    "sys": {"type": 1, "id": 1332, "message": 0.0038, "country": "FI", "sunrise": 1554262754,
-                            "sunset": 1554311195}, "id": 655977, "name": "Järvenpää", "cod": 200},
-              status_code=200)
-        return weather.search('weather', 'w655977', '123456')
+        m.get('https://api.open-meteo.com/v1/forecast', json=mock_response)
+        result = openmeteo_forecast(MockBot(), '47.6', '-122.33', 'Seattle, WA, US')
+
+        assert result['location'] == 'Seattle, WA, US'
+        assert len(result['data']) == 4
+        assert result['data'][0]['summary'] == 'Partly cloudy'
+        assert result['data'][0]['high_temp'] == 12.0
+        assert result['data'][0]['low_temp'] == 5.0
+        assert result['data'][1]['summary'] == 'Light rain'
 
 
-@pytest.fixture
-def forecast_results():
+def test_openmeteo_error():
+    """Test Open-Meteo error handling."""
+    mock_response = {
+        "error": "true",
+        "reason": "Invalid coordinates"
+    }
+
     with requests_mock.mock() as m:
-        m.get('https://api.openweathermap.org/data/2.5/forecast?id=2643743&appid=123456&units=metric',
-              json={"list": [{"dt": 1546862400,
-                              "main": {"temp": 11.27, "temp_min": 6.04, "temp_max": 11.27},
-                              "weather": [{"id": 801, "main": "Clouds", "description": "few clouds", "icon": "02d"}],
-                              "dt_txt": "2019-01-07 12:00:00"},
-                             {"dt": 1546873200,
-                              "main": {"temp": 11.87, "temp_min": 7.95, "temp_max": 11.87},
-                              "weather": [{"id": 500, "main": "Rain", "description": "light rain", "icon": "10d"}],
-                              "dt_txt": "2019-01-07 15:00:00"},
-                             {"dt": 1546884000,
-                              "main": {"temp": 10.19, "temp_min": 7.58, "temp_max": 10.19},
-                              "weather": [{"id": 500, "main": "Rain", "description": "light rain", "icon": "10n"}],
-                              "dt_txt": "2019-01-07 18:00:00"},
-                             {"dt": 1546894800,
-                              "main": {"temp": 9.24, "temp_min": 7.93, "temp_max": 9.24},
-                              "weather": [{"id": 500, "main": "Rain", "description": "light rain", "icon": "10n"}],
-                              "dt_txt": "2019-01-07 21:00:00"},
-                             {"dt": 1546905600,
-                              "main": {"temp": 7.46, "temp_min": 7.46, "temp_max": 7.46},
-                              "weather": [{"id": 500, "main": "Rain", "description": "light rain", "icon": "10n"}],
-                              "dt_txt": "2019-01-08 00:00:00"},
-                             {"dt": 1546916400,
-                              "main": {"temp": 5.29, "temp_min": 5.29, "temp_max": 5.29},
-                              "weather": [
-                                  {"id": 802, "main": "Clouds", "description": "scattered clouds", "icon": "03n"}],
-                              "dt_txt": "2019-01-08 03:00:00"},
-                             {"dt": 1546927200,
-                              "main": {"temp": 5.71, "temp_min": 5.71, "temp_max": 5.71},
-                              "weather": [{"id": 500, "main": "Rain", "description": "light rain", "icon": "10n"}],
-                              "dt_txt": "2019-01-08 06:00:00"},
-                             {"dt": 1546938000,
-                              "main": {"temp": 6.07, "temp_min": 6.07, "temp_max": 6.07},
-                              "weather": [{"id": 500, "main": "Rain", "description": "light rain", "icon": "10d"}],
-                              "dt_txt": "2019-01-08 09:00:00"},
-                             {"dt": 1546948800,
-                              "main": {"temp": 7.23, "temp_min": 7.23, "temp_max": 7.23},
-                              "weather": [{"id": 800, "main": "Clear", "description": "clear sky", "icon": "01d"}],
-                              "dt_txt": "2019-01-08 12:00:00"},
-                             {"dt": 1546959600,
-                              "main": {"temp": 6.71, "temp_min": 6.71, "temp_max": 6.71},
-                              "weather": [{"id": 800, "main": "Clear", "description": "clear sky", "icon": "01d"}],
-                              "dt_txt": "2019-01-08 15:00:00"}],
-                    "city": {"id": 2643743, "name": "London", "coord": {"lat": 51.5073, "lon": -0.1277},
-                             "country": "GB",
-                             "population": 1000000}},
-              status_code=200)
-        return weather.search('forecast', 'w2643743', '123456')
+        m.get('https://api.open-meteo.com/v1/forecast', json=mock_response, status_code=400)
+
+        with pytest.raises(Exception) as exc_info:
+            openmeteo_weather(MockBot(), '999', '999', 'Invalid')
+        assert 'Invalid coordinates' in str(exc_info.value)
 
 
-def test_forecast_command(bot, trigger):
-    @plugin.commands('forecast')
-    @plugin.example('.forecast', 'True')
-    def mock(bot, trigger, match=None):
-        return True
+# =============================================================================
+# Pirate Weather Provider Tests
+# =============================================================================
 
-    assert mock(bot, trigger) is True
+def test_pirateweather_weather():
+    """Test Pirate Weather provider."""
+    mock_response = {
+        "timezone": "America/Los_Angeles",
+        "currently": {
+            "temperature": 15.0,
+            "summary": "Partly Cloudy",
+            "humidity": 0.65,
+            "windSpeed": 4.5,
+            "windBearing": 270,
+            "uvIndex": 3
+        },
+        "daily": {
+            "data": [{
+                "sunriseTime": 1704722400,
+                "sunsetTime": 1704756000
+            }]
+        }
+    }
 
-
-def test_wea_command(bot, trigger):
-    @plugin.commands('wea')
-    @plugin.example('.wea', 'True')
-    def mock(bot, trigger, match=None):
-        return True
-
-    assert mock(bot, trigger) is True
-
-
-def test_weather_command(bot, trigger):
-    @plugin.commands('weather')
-    @plugin.example('.weather', 'True')
-    def mock(bot, trigger, match=None):
-        return True
-
-    assert mock(bot, trigger) is True
-
-
-def test_setup(bot, trigger):
-    weather.setup(bot)
-    assert bot.config.weather is not None
-
-
-# TODO - Determine how to test .configure()
-'''
-def test_configure(bot, trigger):
-    weather.configure(bot.config)
-    assert bot.config.weather
-'''
-
-
-def test_location_search():
     with requests_mock.mock() as m:
-        m.get('https://api.openweathermap.org/data/2.5/weather?q=Seattle&appid=123456&units=metric',
-              json={"coord": {"lon": -122.33, "lat": 47.6},
-                    "weather": [{"id": 801, "main": "Clouds", "description": "few clouds", "icon": "02n"}],
-                    "base": "stations",
-                    "main": {"temp": 7.76, "pressure": 1010, "humidity": 79, "temp_min": 6.7,
-                             "temp_max": 8.3}, "visibility": 16093,
-                    "wind": {"speed": 1.41, "deg": 68.0002}, "clouds": {"all": 20}, "dt": 1546663980,
-                    "sys": {"type": 1, "id": 3417, "message": 0.0071, "country": "US",
-                            "sunrise": 1546703824, "sunset": 1546734771}, "id": 5809844,
-                    "name": "Seattle", "cod": 200},
-              status_code=200)
-        result = weather.search('weather', 'Seattle', '123456')
-        assert result['id'] == 5809844
-        assert result['name'] == 'Seattle'
-        assert result['wind']['deg'] == 68.0002
-        assert result['wind']['speed'] == 1.41
+        m.get(requests_mock.ANY, json=mock_response)
+        result = pirateweather_weather(MockBot(), '47.6', '-122.33', 'Seattle, WA, US')
+
+        assert result['location'] == 'Seattle, WA, US'
+        assert result['temp'] == 15.0
+        assert result['condition'] == 'Partly Cloudy'
+        assert result['humidity'] == 0.65
+        assert result['wind']['speed'] == 4.5
+        assert result['wind']['bearing'] == 270
+        assert result['uvindex'] == 3
+        assert result['timezone'] == 'America/Los_Angeles'
 
 
-def test_woeid_search():
+def test_pirateweather_forecast():
+    """Test Pirate Weather forecast provider."""
+    mock_response = {
+        "timezone": "America/Los_Angeles",
+        "daily": {
+            "data": [
+                {"time": 1704672000, "summary": "Partly cloudy.", "temperatureHigh": 12.0, "temperatureLow": 5.0},
+                {"time": 1704758400, "summary": "Rain.", "temperatureHigh": 14.0, "temperatureLow": 6.0},
+                {"time": 1704844800, "summary": "Overcast.", "temperatureHigh": 11.5, "temperatureLow": 4.5},
+                {"time": 1704931200, "summary": "Clear.", "temperatureHigh": 15.0, "temperatureLow": 7.0},
+            ]
+        }
+    }
+
     with requests_mock.mock() as m:
-        m.get('https://api.openweathermap.org/data/2.5/weather?id=5400075&appid=123456&units=metric',
-              json={"coord": {"lon": -122.04, "lat": 37.37},
-                    "weather": [{"id": 800, "main": "Clear", "description": "clear sky", "icon": "01n"}],
-                    "base": "stations",
-                    "main": {"temp": 55.17, "pressure": 1014, "humidity": 79, "temp_min": 55.04,
-                             "temp_max": 55.4}, "visibility": 16093,
-                    "wind": {"speed": 11.41, "deg": 260, "gust": 8.2}, "clouds": {"all": 1}, "dt": 1546848000,
-                    "sys": {"type": 1, "id": 5122, "message": 0.0191, "country": "US", "sunrise": 1546874568,
-                            "sunset": 1546909596}, "id": 5400075, "name": "Sunnyvale", "cod": 200},
-              status_code=200)
-        result = weather.search('weather', 'w5400075', '123456')
-        assert result['id'] == 5400075
-        assert result['name'] == 'Sunnyvale'
-        assert result['wind']['deg'] == 260
-        assert result['wind']['speed'] == 11.41
+        m.get(requests_mock.ANY, json=mock_response)
+        result = pirateweather_forecast(MockBot(), '47.6', '-122.33', 'Seattle, WA, US')
+
+        assert result['location'] == 'Seattle, WA, US'
+        assert len(result['data']) == 4
+        assert result['data'][0]['summary'] == 'Partly cloudy'
+        assert result['data'][0]['high_temp'] == 12.0
+        assert result['data'][0]['low_temp'] == 5.0
+        assert result['data'][1]['summary'] == 'Rain'
 
 
-def test_zip_search():
+def test_pirateweather_error():
+    """Test Pirate Weather error handling."""
+    mock_response = {"error": "Invalid API key"}
+
     with requests_mock.mock() as m:
-        m.get('https://api.openweathermap.org/data/2.5/weather?zip=90210&appid=123456&units=metric',
-              json={"coord": {"lon": -118.4, "lat": 34.07},
-                    "weather": [{"id": 500, "main": "Rain", "description": "light rain", "icon": "10n"}],
-                    "base": "stations",
-                    "main": {"temp": 54.05, "pressure": 1023, "humidity": 96, "temp_min": 50,
-                             "temp_max": 55.94}, "visibility": 12874, "wind": {"speed": 9.17, "deg": 110},
-                    "rain": {"1h": 0.76}, "clouds": {"all": 90}, "dt": 1546847580,
-                    "sys": {"type": 1, "id": 3514, "message": 0.0095, "country": "US", "sunrise": 1546873193,
-                            "sunset": 1546909223}, "id": 420004549, "name": "Beverly Hills", "cod": 200},
-              status_code=200)
-        result = weather.search('weather', '90210', '123456')
-        assert result['id'] == 420004549
-        assert result['name'] == 'Beverly Hills'
-        assert result['wind']['deg'] == 110
-        assert result['wind']['speed'] == 9.17
+        m.get(requests_mock.ANY, json=mock_response, status_code=401)
+
+        with pytest.raises(Exception) as exc_info:
+            pirateweather_weather(MockBot(), '47.6', '-122.33', 'Seattle, WA, US')
+        assert 'Invalid API key' in str(exc_info.value)
 
 
-def test_search_none():
+# =============================================================================
+# Tomorrow.io Provider Tests
+# =============================================================================
+
+def test_tomorrow_weather():
+    """Test Tomorrow.io weather provider."""
+    mock_response = {
+        "location": {
+            "lat": 47.6,
+            "lon": -122.33,
+            "timezone": "America/Los_Angeles"
+        },
+        "timelines": {
+            "minutely": [{
+                "time": "2024-01-08T12:00:00Z",
+                "values": {
+                    "temperature": 12.5,
+                    "humidity": 75,
+                    "windSpeed": 5.2,
+                    "windDirection": 180,
+                    "weatherCode": 1101,
+                    "uvIndex": 2
+                }
+            }],
+            "daily": [{
+                "time": "2024-01-08T00:00:00Z",
+                "values": {
+                    "sunriseTime": "2024-01-08T07:30:00Z",
+                    "sunsetTime": "2024-01-08T16:45:00Z",
+                    "temperatureMax": 15.0,
+                    "temperatureMin": 8.0,
+                    "weatherCodeMax": 1101
+                }
+            }]
+        }
+    }
+
     with requests_mock.mock() as m:
-        m.get('https://api.openweathermap.org/data/2.5/weather?q=Seattle&appid=123456&units=metric',
-              json={},
-              status_code=200)
-        result = weather.search('weather', 'Seattle', '123456')
-        assert result == {}
+        m.get('https://api.tomorrow.io/v4/weather/forecast', json=mock_response)
+        result = tomorrow_weather(MockBot(), '47.6', '-122.33', 'Seattle, WA, US')
+
+        assert result['location'] == 'Seattle, WA, US'
+        assert result['temp'] == 12.5
+        assert result['condition'] == 'Partly Cloudy'
+        assert result['humidity'] == 0.75
+        assert result['wind']['speed'] == 5.2
+        assert result['wind']['bearing'] == 180
+        assert result['uvindex'] == 2
+        assert result['timezone'] == 'America/Los_Angeles'
 
 
-def test_search_401():
+def test_tomorrow_weather_with_sunrise():
+    """Test Tomorrow.io weather provider with sunrise/sunset enabled."""
+    mock_response = {
+        "location": {
+            "lat": 47.6,
+            "lon": -122.33,
+            "timezone": "America/Los_Angeles"
+        },
+        "timelines": {
+            "minutely": [{
+                "time": "2024-01-08T12:00:00Z",
+                "values": {
+                    "temperature": 12.5,
+                    "humidity": 75,
+                    "windSpeed": 5.2,
+                    "windDirection": 180,
+                    "weatherCode": 1101,
+                    "uvIndex": 2
+                }
+            }],
+            "daily": [{
+                "time": "2024-01-08T00:00:00Z",
+                "values": {
+                    "sunriseTime": "2024-01-08T07:30:00Z",
+                    "sunsetTime": "2024-01-08T16:45:00Z",
+                    "temperatureMax": 15.0,
+                    "temperatureMin": 8.0,
+                    "weatherCodeMax": 1101
+                }
+            }]
+        }
+    }
+
     with requests_mock.mock() as m:
-        m.get('https://api.openweathermap.org/data/2.5/weather?q=Seattle&appid=123456&units=metric',
-              json={},
-              status_code=401)
-        result = weather.search('weather', 'Seattle', '123456')
-        assert result is None
+        m.get('https://api.tomorrow.io/v4/weather/forecast', json=mock_response)
+        result = tomorrow_weather(MockBotWithSunrise(), '47.6', '-122.33', 'Seattle, WA, US')
+
+        assert 'sunrise' in result
+        assert 'sunset' in result
+        assert isinstance(result['sunrise'], int)
+        assert isinstance(result['sunset'], int)
 
 
-def test_get_condition(weather_results):
-    condition = weather.get_condition('')
-    assert condition == 'unknown'
-    condition = weather.get_condition(weather_results)
-    assert condition == 'Clear'
+def test_tomorrow_forecast():
+    """Test Tomorrow.io forecast provider."""
+    mock_response = {
+        "location": {
+            "lat": 47.6,
+            "lon": -122.33,
+            "timezone": "America/Los_Angeles"
+        },
+        "timelines": {
+            "daily": [
+                {
+                    "time": "2024-01-08T00:00:00Z",
+                    "values": {
+                        "temperatureMax": 12.0,
+                        "temperatureMin": 5.0,
+                        "weatherCodeMax": 1101
+                    }
+                },
+                {
+                    "time": "2024-01-09T00:00:00Z",
+                    "values": {
+                        "temperatureMax": 14.0,
+                        "temperatureMin": 6.0,
+                        "weatherCodeMax": 4001
+                    }
+                },
+                {
+                    "time": "2024-01-10T00:00:00Z",
+                    "values": {
+                        "temperatureMax": 11.5,
+                        "temperatureMin": 4.5,
+                        "weatherCodeMax": 1001
+                    }
+                },
+                {
+                    "time": "2024-01-11T00:00:00Z",
+                    "values": {
+                        "temperatureMax": 15.0,
+                        "temperatureMin": 7.0,
+                        "weatherCodeMax": 1000
+                    }
+                }
+            ]
+        }
+    }
+
+    with requests_mock.mock() as m:
+        m.get('https://api.tomorrow.io/v4/weather/forecast', json=mock_response)
+        result = tomorrow_forecast(MockBot(), '47.6', '-122.33', 'Seattle, WA, US')
+
+        assert result['location'] == 'Seattle, WA, US'
+        assert len(result['data']) == 4
+        assert result['data'][0]['summary'] == 'Partly Cloudy'
+        assert result['data'][0]['high_temp'] == 12.0
+        assert result['data'][0]['low_temp'] == 5.0
+        assert result['data'][1]['summary'] == 'Rain'
+        assert result['data'][2]['summary'] == 'Cloudy'
+        assert result['data'][3]['summary'] == 'Clear'
 
 
-def test_get_temp(weather_results):
-    temp = weather.get_temp('')
-    assert temp == 'unknown'
-    temp = weather.get_temp(weather_results)
-    assert temp == '55°C (131°F)'
+def test_tomorrow_error():
+    """Test Tomorrow.io error handling."""
+    mock_response = {"message": "Invalid API key"}
+
+    with requests_mock.mock() as m:
+        m.get('https://api.tomorrow.io/v4/weather/forecast', json=mock_response, status_code=401)
+
+        with pytest.raises(Exception) as exc_info:
+            tomorrow_weather(MockBot(), '47.6', '-122.33', 'Seattle, WA, US')
+        assert 'Invalid API key' in str(exc_info.value)
 
 
-def test_get_humidity(weather_results):
-    humidity = weather.get_humidity('')
-    assert humidity == 'unknown'
-    humidity = weather.get_humidity(weather_results)
-    assert humidity == 'Humidity: 79%'
+def test_tomorrow_weather_codes():
+    """Test Tomorrow.io weather code mapping."""
+    from sopel_weather.providers.weather.tomorrow import WEATHER_CODES
 
-
-def test_get_wind(weather_results):
-    wind = weather.get_wind('')
-    assert wind == 'unknown'
-
-    wind = weather.get_wind(weather_results)
-    assert wind == 'Strong breeze 11.4m/s (→)'
-
-    weather_results['wind']['deg'] = 0
-    weather_results['wind']['speed'] = 0.1
-    wind = weather.get_wind(weather_results)
-    assert wind == 'Calm 0.1m/s (↓)'
-
-    weather_results['wind']['deg'] = 45
-    weather_results['wind']['speed'] = 1.5
-    wind = weather.get_wind(weather_results)
-    assert wind == 'Light air 1.5m/s (↙)'
-
-    weather_results['wind']['deg'] = 90
-    weather_results['wind']['speed'] = 2.5
-    wind = weather.get_wind(weather_results)
-    assert wind == 'Light breeze 2.5m/s (←)'
-
-    weather_results['wind']['deg'] = 135
-    weather_results['wind']['speed'] = 4
-    wind = weather.get_wind(weather_results)
-    assert wind == 'Gentle breeze 4.0m/s (↖)'
-
-    weather_results['wind']['deg'] = 180
-    weather_results['wind']['speed'] = 6
-    wind = weather.get_wind(weather_results)
-    assert wind == 'Moderate breeze 6.0m/s (↑)'
-
-    weather_results['wind']['deg'] = 225
-    weather_results['wind']['speed'] = 8
-    wind = weather.get_wind(weather_results)
-    assert wind == 'Fresh breeze 8.0m/s (↗)'
-
-    weather_results['wind']['deg'] = 270
-    weather_results['wind']['speed'] = 12
-    wind = weather.get_wind(weather_results)
-    assert wind == 'Strong breeze 12.0m/s (→)'
-
-    weather_results['wind']['deg'] = 315
-    weather_results['wind']['speed'] = 16
-    wind = weather.get_wind(weather_results)
-    assert wind == 'Near gale 16.0m/s (↘)'
-
-    weather_results['wind']['deg'] = 0
-    weather_results['wind']['speed'] = 20
-    wind = weather.get_wind(weather_results)
-    assert wind == 'Gale 20.0m/s (↓)'
-
-    weather_results['wind']['deg'] = 45
-    weather_results['wind']['speed'] = 24
-    wind = weather.get_wind(weather_results)
-    assert wind == 'Strong gale 24.0m/s (↙)'
-
-    weather_results['wind']['deg'] = 90
-    weather_results['wind']['speed'] = 28
-    wind = weather.get_wind(weather_results)
-    assert wind == 'Storm 28.0m/s (←)'
-
-    weather_results['wind']['deg'] = 135
-    weather_results['wind']['speed'] = 32
-    wind = weather.get_wind(weather_results)
-    assert wind == 'Violent storm 32.0m/s (↖)'
-
-    weather_results['wind']['deg'] = 180
-    weather_results['wind']['speed'] = 50
-    wind = weather.get_wind(weather_results)
-    assert wind == 'Hurricane 50.0m/s (↑)'
-
-
-def test_get_condition_utf8(weather_results_utf8):
-    condition = weather.get_condition('')
-    assert condition == 'unknown'
-    condition = weather.get_condition(weather_results_utf8)
-    assert condition == 'Clear'
-
-
-def test_get_temp_utf8(weather_results_utf8):
-    temp = weather.get_temp('')
-    assert temp == 'unknown'
-    temp = weather.get_temp(weather_results_utf8)
-    assert temp == '11°C (52°F)'
-
-
-def test_get_humidity_utf8(weather_results_utf8):
-    humidity = weather.get_humidity('')
-    assert humidity == 'unknown'
-    humidity = weather.get_humidity(weather_results_utf8)
-    assert humidity == 'Humidity: 29%'
-
-
-# TODO - Add the remaining condition tests
-def test_get_tomorrow_condition(forecast_results):
-    tomorrow_condition = weather.get_tomorrow_condition(forecast_results)
-    assert tomorrow_condition == 'Light Rain'
-
-
-def test_get_tomorrow_high(forecast_results):
-    tomorrow_high = weather.get_tomorrow_high(forecast_results)
-    assert tomorrow_high == 'High: 11°C (53°F)'
-
-
-def test_get_tomorrow_low(forecast_results):
-    tomorrow_low = weather.get_tomorrow_low(forecast_results)
-    assert tomorrow_low == 'Low: 5°C (41°F)'
+    assert WEATHER_CODES[1000] == 'Clear'
+    assert WEATHER_CODES[1001] == 'Cloudy'
+    assert WEATHER_CODES[1101] == 'Partly Cloudy'
+    assert WEATHER_CODES[4001] == 'Rain'
+    assert WEATHER_CODES[5000] == 'Snow'
+    assert WEATHER_CODES[8000] == 'Thunderstorm'
+    assert WEATHER_CODES[2000] == 'Fog'
+    assert WEATHER_CODES[6001] == 'Freezing Rain'
+    assert WEATHER_CODES[7000] == 'Ice Pellets'

@@ -23,12 +23,14 @@ from sopel.tools.time import format_time
 from .providers.weather.openmeteo import openmeteo_forecast, openmeteo_weather
 from .providers.weather.openweathermap import openweathermap_forecast, openweathermap_weather
 from .providers.weather.pirateweather import pirateweather_forecast, pirateweather_weather
+from .providers.weather.tomorrow import tomorrow_forecast, tomorrow_weather
 
 WEATHER_PROVIDERS = [
     'darksky',
     'openmeteo',
     'openweathermap',
     'pirateweather',
+    'tomorrow',
 ]
 
 GEOCOORDS_PROVIDERS = {
@@ -252,6 +254,9 @@ def get_forecast(bot, trigger):
     # Pirate Weather
     elif bot.config.weather.weather_provider == 'pirateweather':
         return pirateweather_forecast(bot, latitude, longitude, location)
+    # Tomorrow.io
+    elif bot.config.weather.weather_provider == 'tomorrow':
+        return tomorrow_forecast(bot, latitude, longitude, location)
     # Unsupported Provider
     else:
         raise Exception('Error: Unsupported Provider')
@@ -273,6 +278,9 @@ def get_weather(bot, trigger):
     # Pirate Weather
     elif bot.config.weather.weather_provider == 'pirateweather':
         return pirateweather_weather(bot, latitude, longitude, location)
+    # Tomorrow.io
+    elif bot.config.weather.weather_provider == 'tomorrow':
+        return tomorrow_weather(bot, latitude, longitude, location)
     # Unsupported Provider
     else:
         raise Exception('Error: Unsupported Provider')
