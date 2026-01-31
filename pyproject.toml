@@ -8,7 +8,7 @@ namespaces = false
 
 [project]
 name = "sopel-weather"
-version = "2.0.0"
+version = "2.1.0"
 description = "A weather lookup plugin for Sopel IRC bots"
 readme = "README.md"
 license = {text = "MIT"}
